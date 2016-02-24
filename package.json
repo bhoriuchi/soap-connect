@@ -1,0 +1,30 @@
+{
+  "name": "soap-connect",
+  "version": "0.0.1",
+  "description": "SOAP Connect",
+  "main": "lib/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bhoriuchi/soap-connect.git"
+  },
+  "keywords": [
+    "soap", "client", "wsdl"
+  ],
+  "author": "Branden Horiuchi <bhoriuchi@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/bhoriuchi/soap-connect",
+  "bugs": {
+    "url": "https://github.com/bhoriuchi/soap-connect/issues"
+  },
+  "dependencies": {
+    "bluebird": "^3.3.1",
+    "lodash": "^4.5.1",
+    "xml2json": "^0.9.0"
+  },
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1"
+  },
+  "directories": {
+    "example": "example"
+  }
+}
