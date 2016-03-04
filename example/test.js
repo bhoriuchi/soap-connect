@@ -1,16 +1,15 @@
 var client = require('../lib');
-var cred   = require('../credentials');
 var util   = require('util');
 var dotp   = require('dotprune');
 var _ = require('lodash');
 
-cred.wsdl = 'https://pvvapzz030.la.frd.directv.com/sdk/vimService.wsdl';
 
-
-client.wsdl(cred.wsdl).then(function(wsdl) {
+client.wsdl('https://pvvapzz030.la.frd.directv.com/sdk/vimService.wsdl').then(function(wsdl) {
 	
 	
 	console.log(JSON.stringify(wsdl.schemas['urn:vim25'].DynamicData, null, '  '));
+	console.log(JSON.stringify(wsdl.schemas['urn:vim25'].ConfigSpecOperation, null, '  '));
+	
 	
 	//console.log(_.keys(data));
 	
