@@ -4,12 +4,13 @@ var dotp   = require('dotprune');
 var _ = require('lodash');
 
 
-client.wsdl('https://pvvapzz030.la.frd.directv.com/sdk/vimService.wsdl').then(function(wsdl) {
+client.wsdl('https://vcenter01.home.local/sdk/vimService.wsdl').then(function(wsdl) {
 	
 	
-	console.log(JSON.stringify(wsdl.schemas['urn:vim25'].DynamicData, null, '  '));
-	console.log(JSON.stringify(wsdl.schemas['urn:vim25'].ConfigSpecOperation, null, '  '));
-	
+	//console.log(JSON.stringify(wsdl.metadata.schemas['urn:vim25'].DynamicData, null, '  '));
+	//console.log(JSON.stringify(wsdl.metadata.schemas['urn:vim25'].ConfigSpecOperation, null, '  '));
+	//console.log(JSON.stringify(wsdl.metadata.schemas['urn:vim25'].ManagedObjectReference, null, '  '));	
+	console.log(JSON.stringify(wsdl.metadata.operations['urn:vim25'].UpdateInternetScsiAuthenticationProperties, null, '  '));
 	
 	//console.log(_.keys(data));
 	
