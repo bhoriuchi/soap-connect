@@ -2,9 +2,15 @@ var client = require('../lib');
 var util   = require('util');
 var dotp   = require('dotprune');
 var _ = require('lodash');
+var fs = require('fs');
 
-
-client.wsdl('https://vcenter01.home.local/sdk/vimService.wsdl').then(function(wsdl) {
+client.wsdl('https://vcenter/sdk/vimService.wsdl').then(function(wsdl) {
+	
+	var jstr = JSON.stringify(wsdl, null, '  ');
+	
+	//console.log(jstr);
+	
+	fs.writeFileSync('out.txt', jstr);
 	
 	
 	//console.log(JSON.stringify(wsdl.metadata.schemas['urn:vim25'].DynamicData, null, '  '));
