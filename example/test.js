@@ -4,7 +4,7 @@ var dotp   = require('dotprune');
 var _ = require('lodash');
 var fs = require('fs');
 
-client.wsdl('https://vcenter/sdk/vimService.wsdl').then(function(wsdl) {
+client.wsdl('https://pvvapzz030.la.frd.directv.com/sdk/vimService.wsdl').then(function(wsdl) {
 	
 	var jstr = JSON.stringify(wsdl, null, '  ');
 	
