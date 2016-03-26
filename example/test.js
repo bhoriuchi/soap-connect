@@ -9,7 +9,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 client.client(cred.wsdl, {cache: false}).then(function(wsdl) {
 	//console.log(wsdl._meta);
 	
-	//fs.writeFileSync('out.txt', JSON.stringify(wsdl._meta, null, '  '));
+	fs.writeFileSync('out.txt', JSON.stringify(wsdl._meta, null, '  '));
 
 	/*
 	var port = wsdl.vim25Service.VimService.VimPort;
