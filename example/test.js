@@ -4,9 +4,16 @@ var _ = require('lodash');
 var fs = require('fs');
 var cred = require('../credentials');
 
+// sample soap services for credentials file
+//module.exports = {wsdl: 'http://www.webservicex.net/CurrencyConvertor.asmx?WSDL'};
+//module.exports = {wsdl: 'http://www.webservicex.com/globalweather.asmx?wsdl'};
+//module.exports = {wsdl: 'http://wsf.cdyne.com/WeatherWS/Weather.asmx?WSDL'};
+//module.exports = {wsdl: 'http://www.thomas-bayer.com/axis2/services/BLZService?wsdl'};
+
+
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-client.client(cred.wsdl, {cache: false}).then(function(wsdl) {
+client.client(cred.wsdl, {cache: true}).then(function(wsdl) {
 	//console.log(wsdl._meta);
 	
 	fs.writeFileSync('out.txt', JSON.stringify(wsdl._meta, null, '  '));
