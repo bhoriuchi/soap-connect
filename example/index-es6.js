@@ -1,10 +1,10 @@
 import cred from '../credentials'
-import client from '../src/client/index'
+import SoapClient from '../src/client/index'
 import _ from 'lodash'
 
-client(cred.wsdl, { ignoreSSL: true, cache: true }).then((c) => {
+SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   // console.log('res', JSON.stringify(_.omit(res, ['types']), null, '  '))
-  console.log(c)
+  client.VimService.VimPort.RetrieveServiceContent()
 })
 .catch((err) => {
   console.error('err', err)
