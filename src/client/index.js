@@ -17,13 +17,17 @@ export class SoapConnectClient extends EventEmitter {
     this._mainWSDL = mainWSDL
     this._options = options
     this._options.metaPrefix = this._options.metaPrefix || '$$'
-    this._meta = {}
+    this._meta = {
+      $doctype: '<?xml version="1.0" encoding="utf-8"?>',
+      namespaces: {}
+    }
     this.$$ = (v) => `${this._options.metaPrefix}${v}`
-    this._meta[this.$$('doctype')] = '<?xml version="1.0" encoding="utf-8"?>'
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
     return load.call(this).then((meta) => {
+      fs.writeFileSync('meta.txt', JSON.stringify(meta, null, '  '))
+      /*
       this._meta = meta
       let g = getters(this)
 
@@ -53,7 +57,7 @@ ${this._meta[this.$$('doctype')]}
           })
         })
       })
-
+*/
       return this
     })
   }

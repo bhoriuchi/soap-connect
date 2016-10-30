@@ -1,15 +1,15 @@
 import _ from 'lodash'
 import { loadDocument } from '../load'
-import { getTag, getType, getURI, setIf } from './common'
+import { SOAP_DEFINITION } from './const'
+import { getTag, getType, getURI, setIf, getXmlnsFromNS } from './common'
 
 export function parse (client, meta, loaded, payload) {
   let {
-    baseURI, el, tns, namespace, parent, serviceName, portName, nsMap, inTypes, inComplexType, inSimpleType, inSequence,
-    elementName, elementType, elementPath, messageName, portTypeName, operationName, bindingName
+    baseURI, el, targetNamespace, tns, namespace, parent, serviceName, portName, nsMap, inTypes, inComplexType, inSimpleType, inSequence,
+    elementName, elementType, elementPath, portTypeName, operationName, bindingName, parentPath
   } = payload
 
-  let $$ = client.$$
-
+  let $$ = (v) => { return `$${v}`}
   _.forEach(el.childNodes, (child) => {
     let { ns, tag } = getTag(child)
     let [_ns, _tag] = [_.toLower(ns), _.toLower(tag)]
@@ -18,167 +18,137 @@ export function parse (client, meta, loaded, payload) {
       parse(client, meta, loaded, _.merge({}, payload, { el: child, parent: tag }, data))
     }
 
+    // get the current xmlns
+    let xmlns = getXmlnsFromNS(nsMap, targetNamespace) || targetNamespace
+
     switch (tag) {
       case 'xml':
-        meta[$$('doctype')] = `<?xml ${child.nodeValue || child.data}?>`
+        meta.$doctype = `<?xml ${child.nodeValue || child.data}?>`
+        break
+
+      case 'definitions':
+        _.forEach(child._nsMap, (name, ns) => {
+          if (ns === '') {
+            meta.namespaces.$wsdl = name
+          } else {
+            setIf(meta.namespaces, `["${ns}"]`, { name })
+            if (ns === 'soap') meta.$soap = SOAP_DEFINITION[name]
+          }
+        })
+        parseChildren({ targetNamespace: child.getAttribute('targetNamespace'), nsMap: child._nsMap })
+        break
+
+      case 'service':
+        parentPath = `namespaces["${xmlns}"].services["${child.getAttribute('name')}"]`
+        parseChildren({ parentPath })
+        break
+
+      case 'port': // WSDL 1.1
+        parentPath = `${parentPath}["${child.getAttribute('name')}"]`
+        setIf(meta, parentPath, { $binding: child.getAttribute('binding') })
+        parseChildren({ parentPath })
+        break
+
+      case 'endpoint': // WSDL 2.0
+        parentPath = `${parentPath}["${child.getAttribute('name')}"]`
+        setIf(meta, parentPath, { $binding: child.getAttribute('binding') })
+        parseChildren({ parentPath })
         break
 
       case 'import':
         loadDocument({ client, meta, loaded,
           uri: getURI(child.getAttribute('location') || child.getAttribute('schemaLocation'), baseURI),
-          payload: _.merge({}, payload, {
-            namespace: child.getAttribute('namespace'),
-            parent: tag
-          })
+          payload: { targetNamespace }
         })
         break
 
       case 'include':
         loadDocument({ client, meta, loaded,
           uri: getURI(child.getAttribute('location') || child.getAttribute('schemaLocation'), baseURI),
-          payload: _.merge({}, payload, {
-            namespace: tns || namespace,
-            parent: tag
-          })
+          payload: { targetNamespace }
         })
         break
 
       case 'types':
-        setIf(meta, 'types', {
-          [$$('nsMap')]: nsMap
-        })
         parseChildren({ intTypes: true })
-        break
-
-      case 'element':
-        let elName = child.getAttribute('name')
-        let elType = child.getAttribute('type')
-        let elPath = elementPath ? `${elementPath}.props["${elName}"]` : `["${elName}"]`
-
-        if (inComplexType || inSimpleType) {
-          setIf(meta, `types["${tns}"]${elPath}["${$$('type')}"]`, elType ? getType(elType) : {})
-        } else if (elType) {
-          setIf(meta, `types["${tns}"]["${elName}"]`, {
-            [$$('type')]: elType ? getType(elType) : {}
-          })
-        }
-        parseChildren({ elementName: elName, elementPath: elPath, elementType: elType })
-        break
-
-      case 'extension':
-        setIf(meta, `types["${tns}"]${elementPath}["${$$('extension')}"]`, child.getAttribute('base'))
-        parseChildren()
-        break
-
-      case 'restriction':
-        setIf(meta, `types["${tns}"]${elementPath}["${$$('restriction')}"]`, child.getAttribute('base'))
-        parseChildren()
-        break
-
-      case 'enumeration':
-        let enumValue = child.getAttribute('value')
-        setIf(meta, `types["${tns}"]${elementPath}.enums["${enumValue}"]`, enumValue)
-        parseChildren()
-        break
-
-      case 'complexType':
-        let complexTypeName = child.getAttribute('name')
-        if (complexTypeName) {
-          setIf(meta, `types["${tns}"]["${complexTypeName}"]`, {})
-          parseChildren({
-            elementName: complexTypeName,
-            elementPath: elementPath ? `${elementPath}.props["${complexTypeName}"]` : `["${complexTypeName}"]`,
-            inComplexType: true
-          })
-        } else {
-          parseChildren({ inComplexType: true })
-        }
-        break
-
-      case 'simpleType':
-        let simpleTypeName = child.getAttribute('name')
-        if (simpleTypeName) {
-          setIf(meta, `types["${tns}"]["${simpleTypeName}"]`, {})
-          parseChildren({
-            elementName: simpleTypeName,
-            elementPath: elementPath ? `${elementPath}.props["${simpleTypeName}"]` : `["${simpleTypeName}"]`,
-            inComplexType: true
-          })
-        } else {
-          parseChildren({ inSimpleType: true })
-        }
-        break
-
-      case 'complexContent':
-        parseChildren()
-        break
-
-      case 'simpleContent':
-        parseChildren()
-        break
-
-      case 'sequence':
-        parseChildren({ inSequence: true })
-        break
-
-      case 'definitions':
-        parseChildren({
-          tns: child.getAttribute('targetNamespace') || tns || _.get(child, `_nsMap["${ns}"]`),
-          nsMap: _.merge({}, nsMap, child._nsMap)
-        })
         break
 
       case 'schema':
         parseChildren({
-          tns: child.getAttribute('targetNamespace') || tns || _.get(child, `_nsMap["${ns}"]`),
-          nsMap: _.merge({}, nsMap, child._nsMap),
-          elementFormDefault: child.getAttribute('elementFormDefault')
+          targetNamespace: child.getAttribute('targetNamespace') || targetNamespace,
+          elementFormDefault: child.getAttribute('elementFormDefault'),
+          nsMap: _.merge(nsMap, child._nsMap)
         })
         break
 
-      case 'service':
-        let _serviceName = child.getAttribute('name')
-        setIf(meta, `services["${_serviceName}"]`, {})
-        parseChildren({ serviceName: _serviceName })
+      case 'element':
+        let elPath = parentPath
+        let [elName, elType] = [child.getAttribute('name'), child.getAttribute('type')]
+        let [minOccurs, maxOccurs] = [child.getAttribute('minOccurs'), child.getAttribute('maxOccurs')]
+
+        if (parent === 'schema') elPath = `namespaces["${xmlns}"].types["${elName}"]`
+        else elPath = `${parentPath}.props["${elName}"]`
+
+        _.set(meta, `${elPath}.type`, elType || undefined)
+        _.set(meta, `${elPath}.minOccurs`, minOccurs || undefined)
+        _.set(meta, `${elPath}.maxOccurs`, maxOccurs || undefined)
+        parseChildren({ parentPath: parent === 'schema' ? elPath : parentPath })
         break
 
-      case 'port':
-        let _portName = child.getAttribute('name')
-        setIf(meta, `services["${serviceName}"].ports["${_portName}"]`, {
-          [$$('binding')]: child.getAttribute('binding')
-        })
-        parseChildren({ portName: _portName })
+      case 'complexType':
+        let cTypeName = child.getAttribute('name')
+        parseChildren({ parentPath: cTypeName ? `namespaces["${xmlns}"].types["${cTypeName}"]` : parentPath })
         break
 
-      case 'address':
-        if (_ns === 'soap' && parent === 'port') {
-          setIf(meta, `services["${serviceName}"].ports["${portName}"]["${$$('soap')}"]`, {
-            location: child.getAttribute('location')
-          })
-        }
+      case 'simpleType':
+        let sTypeName = child.getAttribute('name')
+        parseChildren({ parentPath: sTypeName ? `namespaces["${xmlns}"].types["${sTypeName}"]` : parentPath })
+        break
+
+      case 'enumeration':
+        let enumValue = child.getAttribute('value')
+        setIf(meta, `${parentPath}.enums["${enumValue}"]`, enumValue)
+        parseChildren()
+        break
+
+      case 'extension':
+        setIf(meta, `${parentPath}.extension`, child.getAttribute('base'))
+        parseChildren()
+        break
+
+      case 'restriction':
+        setIf(meta, `${parentPath}.restriction`, child.getAttribute('base'))
+        parseChildren()
         break
 
       case 'message':
-        let _messageName = child.getAttribute('name')
-        let _messageType = child.getAttribute('type')
-        setIf(meta, `messages["${tns}"]["${_messageName}"]`, {})
-        parseChildren({ messageName: _messageName })
+        parseChildren({ parentPath: `namespaces["${xmlns}"].messages["${child.getAttribute('name')}"]` })
         break
 
       case 'part':
         let partName = child.getAttribute('name')
-        let partType = getType(child.getAttribute('element') || child.getAttribute('type'))
-        setIf(meta, `messages["${tns}"]["${messageName}"].parts["${partName}"].type`, partType)
+        let partType = child.getAttribute('element') || child.getAttribute('type')
+        setIf(meta, `${parentPath}["${partName}"]`, partType)
         parseChildren()
         break
 
-      case 'portType':
-        let _portTypeName = child.getAttribute('name')
-        parseChildren({ portTypeName: _portTypeName })
+      case 'portType': // WSDL 1.1
+        let ptName = child.getAttribute('name')
+        parseChildren({ parentPath: `namespaces["${xmlns}"].portTypes["${ptName}"]` })
+        break
+
+      case 'interface': // WSDL 2.0
+        let ifName = child.getAttribute('name')
+        parseChildren({ parentPath: `namespaces["${xmlns}"].portTypes["${ifName}"]` })
         break
 
       case 'operation':
-        let _operationName = child.getAttribute('name')
+        let opPath = `${parentPath}["${child.getAttribute('name')}"]`
+        if (parent === 'portType' || parent === 'interface') {
+          parseChildren({ parentPath: opPath })
+        }
+
+        /*
         if (ns === 'soap') {
           setIf(meta, `operations["${tns}"]["${operationName}"]["${$$('soap')}"]`, {
             soapAction: child.getAttribute('soapAction'),
@@ -187,25 +157,23 @@ export function parse (client, meta, loaded, payload) {
         }
         if (bindingName) setIf(meta, `operations["${tns}"]["${_operationName}"]["${$$('binding')}"]`, bindingName)
         parseChildren({ operationName: _operationName })
+        */
         break
 
       case 'input':
-        if (operationName) {
-          setIf(meta, `operations["${tns}"]["${operationName}"].input.message`, child.getAttribute('message'))
-        }
-        parseChildren()
+        _.set(meta, `${parentPath}.input.name`, child.getAttribute('name') || undefined)
+        _.set(meta, `${parentPath}.input.message`, child.getAttribute('message') || undefined)
         break
 
       case 'output':
-        if (operationName) {
-          setIf(meta, `operations["${tns}"]["${operationName}"].output.message`, child.getAttribute('message'))
-        }
-        parseChildren()
+        _.set(meta, `${parentPath}.output.name`, child.getAttribute('name') || undefined)
+        _.set(meta, `${parentPath}.output.message`, child.getAttribute('message') || undefined)
         break
 
       case 'fault':
         let faultName = child.getAttribute('name')
-
+        _.set(meta, `${parentPath}.faults["${faultName}"]`, child.getAttribute('message'))
+        /*
         if (ns === 'soap') {
           if (operationName) {
             setIf(meta, `operations["${tns}"]["${operationName}"].faults["${faultName}"]["${$$('soap')}"].use`, child.getAttribute('use'))
@@ -216,9 +184,10 @@ export function parse (client, meta, loaded, payload) {
           }
           parseChildren()
         }
+        */
         break
 
-      case 'body':
+      case 'body1':
         if (ns === 'soap') {
           if (parent === 'input' || parent === 'output') {
             setIf(meta, `operations["${tns}"]["${operationName}"].${parent}.use`, child.getAttribute('use'))
@@ -226,7 +195,7 @@ export function parse (client, meta, loaded, payload) {
         }
         break
 
-      case 'binding':
+      case 'binding1':
         let _bindingName = child.getAttribute('name')
         let _bindingType = getType(child.getAttribute('type'))
         if (ns === 'soap') {
@@ -243,7 +212,16 @@ export function parse (client, meta, loaded, payload) {
         }
         break
 
+      case 'address1':
+        if (_ns === 'soap' && parent === 'port') {
+          setIf(meta, `services["${serviceName}"].ports["${portName}"]["${$$('soap')}"]`, {
+            location: child.getAttribute('location')
+          })
+        }
+        break
+
       default:
+        parseChildren({})
         break
     }
   })

@@ -11,7 +11,7 @@ const STORAGE_PATH = path.resolve(`${BASE_DIR}/.wsdlCache`)
 export function loadDocument ({ client, uri, meta, loaded, payload }) {
   if (_.includes(loaded, uri)) return
   client.emit('wsdl.load.start', uri)
-
+  console.log('loading', uri)
   request(uri, (err, res, body) => {
     if (err || res.statusCode !== 200) return client.emit('wsdl.load.error', err || body || res)
     let baseURI = `${uri.substring(0, uri.lastIndexOf('/'))}/`

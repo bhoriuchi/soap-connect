@@ -8,15 +8,15 @@ export function getTag (child) {
 }
 
 export function getType (t) {
-  let [ns, name] = t.indexOf(':') !== -1 ? t.split(':') : ['', t]
-  return { ns, name }
+  let [prefix, name] = t.indexOf(':') !== -1 ? t.split(':') : ['', t]
+  return { prefix, name }
 }
 
 export function getURI(loc, baseURI) {
   return url.parse(loc).host ? loc : url.resolve(baseURI, loc)
 }
 
-export function setIf (obj, path, val = {}) {
+export function setIf (obj, path, val) {
   if (!_.keys(val).length) {
     if (!_.has(obj, path)) _.set(obj, path, val)
   } else {
@@ -25,9 +25,16 @@ export function setIf (obj, path, val = {}) {
   return _.get(obj, path)
 }
 
+export function getXmlnsFromNS (nsMap, ns) {
+  for (const key in nsMap) {
+    if (nsMap[key] === ns) return key
+  }
+}
+
 export default {
   getTag,
   getType,
   getURI,
-  setIf
+  setIf,
+  getXmlnsFromNS
 }
