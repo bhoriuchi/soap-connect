@@ -31,10 +31,24 @@ export function getXmlnsFromNS (nsMap, ns) {
   }
 }
 
+export function mergeOperations (meta) {
+  _.forEach(meta.namespaces, (namespace) => {
+    _.forEach(namespace.bindings, (binding) => {
+      let type = getType(binding.type)
+      let operations = _.get(meta.namespaces, `["${type.prefix}"].portTypes["${type.name}"].operations`, {})
+      _.merge(binding.operations, operations)
+    })
+  })
+  _.forEach(meta.namespaces, (namespace) => {
+    delete namespace.portTypes
+  })
+}
+
 export default {
   getTag,
   getType,
   getURI,
   setIf,
-  getXmlnsFromNS
+  getXmlnsFromNS,
+  mergeOperations
 }
