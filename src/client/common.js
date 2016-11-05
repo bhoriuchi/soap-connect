@@ -48,6 +48,18 @@ export function getNsByName (meta, name) {
   return _.find(_.map(meta.namespaces, (ns) => ns), { name })
 }
 
+export function getWsdlType (meta, type, defaultPrefix) {
+  let { prefix, name } = getType(type)
+  return _.get(meta, `namespaces["${prefix || defaultPrefix}"].types["${name}"]`)
+}
+
+export function getWsdlFn (client, type, defaultPrefix) {
+  let { prefix, name } = getType(type)
+  return _.get(client, `types["${prefix || defaultPrefix}"]["${name}"]`, () => {
+    throw new Error(`unable to find ${type}`)
+  })
+}
+
 export default {
   getTag,
   getType,
@@ -55,5 +67,7 @@ export default {
   setIf,
   getXmlnsFromNS,
   mergeOperations,
-  getNsByName
+  getNsByName,
+  getWsdlType,
+  getWsdlFn
 }

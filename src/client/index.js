@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import EventEmitter from 'events'
 import load from './load'
+import buildTypes from './buildTypes'
 import buildMethods from './buildMethods'
 // import fs from 'fs'
 
@@ -16,11 +17,12 @@ export class SoapConnectClient extends EventEmitter {
 
     return load.call(this).then((meta) => {
       this._meta = meta
+      buildTypes(this, meta)
       // fs.writeFileSync('meta.txt', JSON.stringify(meta, null, '  '))
       _.forEach(meta.namespaces, (ns) => {
         _.forEach(ns.services, (svc, svcName) => {
           _.forEach(svc, (port, portName) => {
-            buildMethods(this, meta, port, `["${svcName}"]["${portName}"]`)
+            buildMethods(this, meta, port, `services["${svcName}"]["${portName}"]`)
           })
         })
       })

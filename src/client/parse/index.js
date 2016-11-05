@@ -75,6 +75,10 @@ export function parse (client, meta, loaded, payload) {
         })
         break
 
+      case 'attribute':
+        _.set(meta, `${parentPath}.attrs["${child.getAttribute('name')}"].type`, child.getAttribute('type'))
+        break
+
       case 'element':
         let elPath = parentPath
         let [elName, elType] = [child.getAttribute('name'), child.getAttribute('type')]
