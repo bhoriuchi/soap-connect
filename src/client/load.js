@@ -4,14 +4,14 @@ import LocalStorage from 'node-localstorage'
 import request from 'request'
 import xmldom from 'xmldom'
 import parse from './parse/index'
+import { mergeOperations } from './common'
 
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
-const STORAGE_PATH = path.resolve(`${BASE_DIR}/.wsdlCache`)
+const STORAGE_PATH = path.resolve(`${BASE_DIR}/.localStorage`)
 
 export function loadDocument ({ client, uri, meta, loaded, payload }) {
   if (_.includes(loaded, uri)) return
   client.emit('wsdl.load.start', uri)
-  console.log('loading', uri)
   request(uri, (err, res, body) => {
     if (err || res.statusCode !== 200) return client.emit('wsdl.load.error', err || body || res)
     let baseURI = `${uri.substring(0, uri.lastIndexOf('/'))}/`
@@ -38,6 +38,7 @@ export default function load () {
       if (idx >= 0) resolving.splice(idx, 1)
       if (!resolving.length) {
         this.removeAllListeners()
+        mergeOperations(meta)
         if (useCache) store.setItem(uri, JSON.stringify(meta))
         return resolve(meta)
       }

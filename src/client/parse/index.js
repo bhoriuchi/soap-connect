@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { loadDocument } from '../load'
 import { SOAP_DEFINITION } from './const'
-import { getTag, getURI, setIf, getXmlnsFromNS } from './common'
+import { getTag, getURI, setIf, getXmlnsFromNS } from '../common'
 
 export function parse (client, meta, loaded, payload) {
   let { baseURI, el, targetNamespace, parent, nsMap, parentPath, inBinding } = payload

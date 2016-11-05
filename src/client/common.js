@@ -44,11 +44,16 @@ export function mergeOperations (meta) {
   })
 }
 
+export function getNsByName (meta, name) {
+  return _.find(_.map(meta.namespaces, (ns) => ns), { name })
+}
+
 export default {
   getTag,
   getType,
   getURI,
   setIf,
   getXmlnsFromNS,
-  mergeOperations
+  mergeOperations,
+  getNsByName
 }

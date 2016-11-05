@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import { SOAP_DEFINITION } from './parse/const'
-import { getType } from './parse/common'
+import { getType } from './common'
 
 export function getSoapConst () {
   let soapNS = _.get(this._meta, `types["${this.$$('nsMap')}"].soap`)

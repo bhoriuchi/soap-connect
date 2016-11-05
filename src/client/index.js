@@ -1,13 +1,8 @@
 import _ from 'lodash'
 import EventEmitter from 'events'
 import load from './load'
-import getters from './getters'
-import { mergeOperations } from './parse/common'
-import fs from 'fs'
-
-export function getNS (ns) {
-  return _.get(this._meta, `types["${this.$$('nsMap')}"]["${ns}"]`)
-}
+import buildMethods from './buildMethods'
+// import fs from 'fs'
 
 export class SoapConnectClient extends EventEmitter {
   constructor (mainWSDL, options = {}) {
@@ -16,19 +11,19 @@ export class SoapConnectClient extends EventEmitter {
 
     this._mainWSDL = mainWSDL
     this._options = options
-    this._options.metaPrefix = this._options.metaPrefix || '$$'
-    this._meta = {
-      $doctype: '<?xml version="1.0" encoding="utf-8"?>',
-      namespaces: {}
-    }
-
+    this._meta = { $doctype: '<?xml version="1.0" encoding="utf-8"?>', namespaces: {} }
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
     return load.call(this).then((meta) => {
-      mergeOperations(meta)
-
-      fs.writeFileSync('meta.txt', JSON.stringify(meta, null, '  '))
-
+      this._meta = meta
+      // fs.writeFileSync('meta.txt', JSON.stringify(meta, null, '  '))
+      _.forEach(meta.namespaces, (ns) => {
+        _.forEach(ns.services, (svc, svcName) => {
+          _.forEach(svc, (port, portName) => {
+            buildMethods(this, meta, port, `["${svcName}"]["${portName}"]`)
+          })
+        })
+      })
       return this
     })
   }
