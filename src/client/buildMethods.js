@@ -25,8 +25,16 @@ function serializeObj (meta, obj, prefix, nsDefined = false) {
   console.log(obj)
   _.forEach(obj, (v, k) => {
     let xmlns = !nsDefined ? ` xmlns:${prefix}="${_.get(meta, `namespaces["${prefix}"].name`)}"` : ''
-    xml += `<${prefix}:${k}${xmlns}>`
-    // xml += serializeObj(meta, v, prefix, true)
+    let attrs = []
+    _.forEach(v, (attr, attrName) => {
+      if (attrName.match(/^@.*/)) {
+        attrName = attrName.replace(/^@(.*)/, '$1')
+        attrs.push(`${attrName}="${attr}"`)
+      }
+    })
+    let attrStr = attrs.length ? ` ${attrs.join(', ')}` : ''
+    xml += `<${prefix}:${k}${xmlns}${attrStr}>`
+    xml += _.has(v, '$value') ? v.$value : serializeObj(meta, v, prefix, true)
     xml += `</${prefix}:${k}>`
   })
   return xml
