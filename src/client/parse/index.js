@@ -76,6 +76,7 @@ export function parse (client, meta, loaded, payload) {
         break
 
       case 'attribute':
+        console.log('here')
         _.set(meta, `${parentPath}.attrs["${child.getAttribute('name')}"].type`, child.getAttribute('type'))
         break
 

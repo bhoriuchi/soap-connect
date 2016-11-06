@@ -14,8 +14,8 @@ export const SOAP_DEFINITION = {
 }
 
 export const XSD = {
-  anyType (o) {
-    return o
+  anyType (obj) {
+    return obj
   },
   string (obj) {
     return _.toString(obj)
@@ -96,4 +96,12 @@ export const XSD = {
   hexBinary (obj) {
     return _.toString(obj)
   }
+}
+
+export const WSDL_SCHEMAS = {
+  'http://www.w3.org/2001/XMLSchema': _.mapValues(XSD, () => {
+    return (obj) => {
+      return { $value: obj.$value || obj }
+    }
+  })
 }

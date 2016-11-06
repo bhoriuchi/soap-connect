@@ -1,34 +1,36 @@
 import _ from 'lodash'
 import { getWsdlFn } from './common'
-import { XSD } from './parse/const'
+import { XSD, WSDL_SCHEMAS } from './parse/const'
 let xsdTypes = _.keys(XSD)
 
 export default function buildTypes (client, meta) {
   _.forEach(meta.namespaces, (ns, nsName) => {
+    // set built in schemas
+    _.forEach(WSDL_SCHEMAS[ns.name], (fn, name) => _.set(client, `types["${nsName}"]["${name}"]`, fn))
+
+    // set ns types
     _.forEach(ns.types, (type, typeName) => {
       _.set(client, `types["${nsName}"]["${typeName}"]`, (args) => {
-        if (type.type && !type.props && !type.attrs) return getWsdlFn(client, type.type, nsName)(args)
+        if (type.type && !type.props && !type.attrs) return { [typeName]: getWsdlFn(client, type.type, nsName)(args) }
 
-        let attrs = []
+        let [t, extension] = [{}, _.get(type, 'extension')]
 
-        // get attributes
         _.forEach(type.attrs, (attr, attrName) => {
           let a = _.get(args, `@${attrName}`)
-          if (a !== undefined) attrs.push(`${attrName}="${a}"`)
+          if (a !== undefined) t[`@${attrName}`] = a
         })
 
-        let xml = `<${nsName}:${typeName}${' '.concat(attrs.join(', '))}>`
+        if (extension) _.merge(t, getWsdlFn(client, type.extension, nsName)(args))
 
-        // get props
         _.forEach(type.props, (prop, propName) => {
           let p = _.get(args, propName)
-          if (p !== undefined) {
-            xml += `<${nsName}:${propName}>${p}</${nsName}:${propName}>`
+          if (p) {
+            if (_.includes(xsdTypes, prop.type)) t[propName] = p
+            else t[propName] = getWsdlFn(client, prop.type, nsName)(args[propName])
           }
         })
 
-        xml += `</${nsName}:${typeName}>`
-        return xml
+        return t
       })
     })
   })

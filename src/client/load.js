@@ -39,7 +39,7 @@ export default function load () {
       if (!resolving.length) {
         this.removeAllListeners()
         mergeOperations(meta)
-        if (useCache) store.setItem(uri, JSON.stringify(meta))
+        store.setItem(uri, JSON.stringify(meta))
         return resolve(meta)
       }
     })
