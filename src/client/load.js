@@ -3,7 +3,7 @@ import path from 'path'
 import LocalStorage from 'node-localstorage'
 import request from 'request'
 import xmldom from 'xmldom'
-import parse from './parse/index'
+import parser from './wsdl/parse'
 import { mergeOperations } from './common'
 
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
@@ -16,7 +16,7 @@ export function loadDocument ({ client, uri, meta, loaded, payload }) {
     if (err || res.statusCode !== 200) return client.emit('wsdl.load.error', err || body || res)
     let baseURI = `${uri.substring(0, uri.lastIndexOf('/'))}/`
     let el = new xmldom.DOMParser().parseFromString(body)
-    parse(client, meta, loaded, _.merge({}, payload, { baseURI, el }))
+    parser(client, meta, loaded, _.merge({}, payload, { baseURI, el }))
     loaded.push(uri)
     client.emit('wsdl.load.end', uri)
   })
@@ -25,12 +25,12 @@ export function loadDocument ({ client, uri, meta, loaded, payload }) {
 export default function load () {
   return new Promise((resolve, reject) => {
     let [ resolving, loaded, meta, uri, client ] = [ [], [], this._meta, this._mainWSDL, this ]
+    /*
     let useCache = _.get(this._options, 'cache', true)
     let store = new LocalStorage.LocalStorage(STORAGE_PATH)
     let cache = store.getItem(uri)
-
     if (cache && useCache) return resolve(JSON.parse(cache))
-
+    */
     this.on('wsdl.load.error', (err) => reject(err))
     this.on('wsdl.load.start', (doc) => resolving.push(doc))
     this.on('wsdl.load.end', (doc) => {
@@ -38,8 +38,8 @@ export default function load () {
       if (idx >= 0) resolving.splice(idx, 1)
       if (!resolving.length) {
         this.removeAllListeners()
-        mergeOperations(meta)
-        store.setItem(uri, JSON.stringify(meta))
+        // mergeOperations(meta)
+        // store.setItem(uri, JSON.stringify(meta))
         return resolve(meta)
       }
     })

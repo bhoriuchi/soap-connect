@@ -48,6 +48,17 @@ export function getNsByName (meta, name) {
   return _.find(_.map(meta.namespaces, (ns) => ns), { name })
 }
 
+export function getPrefixByNS (meta, ns) {
+  let prefix = null
+  _.forEach(meta.namespaces, (n, p) => {
+    if (n.name === ns && n.types) {
+      prefix = p
+      return false
+    }
+  })
+  return prefix
+}
+
 export function getWsdlType (meta, type, defaultPrefix) {
   let { prefix, name } = getType(type)
   return _.get(meta, `namespaces["${prefix || defaultPrefix}"].types["${name}"]`)
@@ -69,5 +80,6 @@ export default {
   mergeOperations,
   getNsByName,
   getWsdlType,
-  getWsdlFn
+  getWsdlFn,
+  getPrefixByNS
 }

@@ -1,5 +1,8 @@
 import _ from 'lodash'
+import request from 'request'
+import url from 'url'
 import { getNsByName, getType } from './common'
+import deserialize from './parse/deserialize'
 
 function getBinding (meta, binding) {
   let { prefix, name } = getType(binding)
@@ -22,7 +25,6 @@ function getWsdlMessage (meta, type) {
 
 function serializeObj (meta, obj, prefix, nsDefined = false) {
   let xml = ''
-  console.log(obj)
   _.forEach(obj, (v, k) => {
     let xmlns = !nsDefined ? ` xmlns:${prefix}="${_.get(meta, `namespaces["${prefix}"].name`)}"` : ''
     let attrs = []
@@ -56,18 +58,40 @@ function createRequest (meta, obj, prefix) {
 
 export default function buildMethods (client, meta, port, portPath) {
   let { binding, address } = port
+  let svcURL = url.parse(address)
+  if (svcURL.host.match(/localhost/i)) svcURL.host = client._endpoint
   binding = getBinding(meta, binding)
 
   _.forEach(binding.operations, (op, opName) => {
-    _.set(client, `${portPath}["${opName}"]`, (args) => {
-      // console.log(JSON.stringify(op, null, '  '))
-      let input = getWsdlMessage(meta, op.input.message)
-      let { prefix, name } = getType(input.parameters)
-      let obj = _.get(client, `types["${prefix}"]["${name}"]`)(args)
+    _.set(client, `${portPath}["${opName}"]`, (args, callback = () => false) => {
+      return new Promise((resolve, reject) => {
+        try {
+          let input = getWsdlMessage(meta, op.input.message)
+          let { prefix, name } = getType(input.parameters)
+          let obj = _.get(client, `types["${prefix}"]["${name}"]`)(args)
+          let reqBody = createRequest(meta, obj, prefix)
 
-      let req = createRequest(meta, obj, prefix)
-
-      console.log(req)
+          request.post({
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'Content-Length': reqBody.length
+            },
+            url: url.format(svcURL),
+            body: reqBody
+          }, (err, res, body) => {
+            if (err) {
+              callback(err)
+              return reject(err)
+            }
+            let obj = deserialize(client, body, res)
+            callback(null, obj)
+            return resolve(obj)
+          })
+        } catch (err) {
+          callback(err)
+          return reject(err)
+        }
+      })
     })
   })
 }

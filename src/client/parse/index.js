@@ -169,7 +169,6 @@ export function parse (client, meta, loaded, payload) {
           setIf(meta, `${parentPath}.output`, {})
           parseChildren({ parentPath: `${parentPath}.output` })
         }
-
         break
 
       case 'fault':

@@ -1,20 +1,35 @@
 import _ from 'lodash'
+import url from 'url'
 import EventEmitter from 'events'
+import WSDL from './wsdl/index'
+/*
 import load from './load'
 import buildTypes from './buildTypes'
 import buildMethods from './buildMethods'
-// import fs from 'fs'
-
+*/
 export class SoapConnectClient extends EventEmitter {
-  constructor (mainWSDL, options = {}) {
+  constructor (wsdlAddress, options, callback) {
     super()
-    if (!mainWSDL) throw new Error('No WSDL provided')
+    if (!_.isString(wsdlAddress)) throw new Error('No WSDL provided')
 
-    this._mainWSDL = mainWSDL
+    if (_.isFunction(options)) {
+      callback = options
+      options = {}
+    }
+    callback = _.isFunction(callback) ? callback : () => false
+
+    options.endpoint = options.endpoint || url.parse(wsdlAddress).host
     this._options = options
-    this._meta = { $doctype: '<?xml version="1.0" encoding="utf-8"?>', namespaces: {} }
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+    let loadWSDL = WSDL(wsdlAddress, options.wsdl)
 
+    return loadWSDL.then((wsdlInstance) => {
+      this._wsdl = wsdlInstance
+      callback(this)
+      return this
+    })
+
+    /*
     return load.call(this).then((meta) => {
       this._meta = meta
       buildTypes(this, meta)
@@ -28,6 +43,7 @@ export class SoapConnectClient extends EventEmitter {
       })
       return this
     })
+    */
   }
 }
 
