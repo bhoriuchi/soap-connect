@@ -3,8 +3,8 @@ import path from 'path'
 import LocalStorage from 'node-localstorage'
 import request from 'request'
 import xmldom from 'xmldom'
-import parser from './wsdl/parse'
-import { mergeOperations } from './common'
+import parser from '../wsdl/parse'
+import { mergeOperations } from '../common'
 
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
 const STORAGE_PATH = path.resolve(`${BASE_DIR}/.localStorage`)

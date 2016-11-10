@@ -1,23 +1,6 @@
 import _ from 'lodash'
 import url from 'url'
-
-export const SOAP = {
-  'http://schemas.xmlsoap.org/wsdl/soap/': {
-    version: '1.1',
-    envelope: 'http://schemas.xmlsoap.org/soap/envelope/',
-    httpTransport: 'http://schemas.xmlsoap.org/soap/http',
-    encoding: 'http://schemas.xmlsoap.org/soap/encoding/'
-  },
-  'http://schemas.xmlsoap.org/wsdl/soap12/': {
-    version: '1.2',
-    envelope: 'http://www.w3.org/2003/05/soap-envelope',
-    httpTransport: 'http://schemas.xmlsoap.org/soap/http',
-    encoding: 'http://schemas.xmlsoap.org/soap/encoding/'
-  }
-}
-
-export const XS = 'http://www.w3.org/2001/XMLSchema'
-export const WSDL = 'http://schemas.xmlsoap.org/wsdl/'
+import { XS, WSDL } from '../const'
 
 export function getAttributes (el, omit = []) {
   let attrs = {}
@@ -39,14 +22,6 @@ export function setAttributes (base, path, el, omit) {
   })
 }
 
-export function getTag (el, nsMap) {
-  let t = _.get(el, 'tagName') || _.get(el, 'nodeName')
-  if (!t) throw new Error('No tag found')
-  let [prefix, tag] = t.indexOf(':') !== -1 ? t.split(':') : ['', t]
-  let ns = _.get(nsMap, `["${prefix}"]`)
-  return { prefix, tag, ns }
-}
-
 export function getURI(loc, baseURI) {
   return url.parse(loc).host ? loc : url.resolve(baseURI, loc)
 }
@@ -62,23 +37,33 @@ export function updateNSAlias (obj, nsMap) {
 
 export default function (loaded, context) {
   let data = {}
-  let { baseURI, el, targetNamespace, parent, nsMap, parentPath, inBinding } = context
+  let { baseURI, el, targetNamespace, parent, nsMap, parentPath } = context
   nsMap = _.merge({}, nsMap, el._nsMap)
-  let { prefix, tag, ns } = getTag(el, nsMap)
+  let { prefix, tag, ns } = this.getTag(el, nsMap)
   let isWsdlNS = _.get(nsMap, prefix) === WSDL
   let isXmlNS = _.get(nsMap, prefix) === XS
-  let isSoapNS = _.includes(_.keys(SOAP), _.get(nsMap, prefix))
   let name = el && _.isFunction(el.getAttribute) ? el.getAttribute('name') : ''
+
+  /*
+   * XML Doctype
+   */
+  if (_.toLower(tag) === 'xml') {
+    let val = el.nodeValue || el.data
+    this.doctype = val ? `<?xml ${val}?>` : this.doctype
+  }
 
   /*
    * WSDL Namespace
    */
-  if (isWsdlNS) {
+  else if (isWsdlNS) {
     switch (tag) {
       case 'definitions':
         targetNamespace = el.getAttribute('targetNamespace')
         updateNSAlias(this, nsMap)
         data = { targetNamespace }
+        break
+
+      case 'types':
         break
 
       case 'service':
@@ -98,13 +83,13 @@ export default function (loaded, context) {
         break
 
       case 'import':
-        let importURI = getURI(el.getAttribute('location') || el.getAttribute('schemaLocation'), baseURI)
-        this.loadDocument(importURI, loaded, {})
+        let importLoc = el.getAttribute('location') || el.getAttribute('schemaLocation')
+        if (importLoc) this.loadDocument(getURI(importLoc, baseURI), loaded, {})
         break
 
       case 'include':
-        let includeURI = getURI(el.getAttribute('schemaLocation') || el.getAttribute('location'), baseURI)
-        this.loadDocument(includeURI, loaded, _.merge({}, context))
+        let includeLoc = el.getAttribute('schemaLocation') || el.getAttribute('location')
+        if (includeLoc) this.loadDocument(getURI(includeLoc, baseURI), loaded, _.merge({}, context))
         break
 
       case 'message':
@@ -126,7 +111,7 @@ export default function (loaded, context) {
         break
 
       case 'operation':
-        data = { parentPath: `${parentPath}["${name}"]` }
+        data = { parentPath: `${parentPath}.operations["${name}"]` }
         break
 
       case 'input':
@@ -153,7 +138,11 @@ export default function (loaded, context) {
         data = { parentPath }
         break
 
+      case '#text':
+        break
+
       default:
+        console.log('TAG!', tag, name)
         break
     }
   }
@@ -164,13 +153,13 @@ export default function (loaded, context) {
   else if (isXmlNS) {
     switch (tag) {
       case 'import':
-        let importURI = getURI(el.getAttribute('location') || el.getAttribute('schemaLocation'), baseURI)
-        this.loadDocument(importURI, loaded, {})
+        let importLoc = el.getAttribute('location') || el.getAttribute('schemaLocation')
+        if (importLoc) this.loadDocument(getURI(importLoc, baseURI), loaded, {})
         break
 
       case 'include':
-        let includeURI = getURI(el.getAttribute('schemaLocation') || el.getAttribute('location'), baseURI)
-        this.loadDocument(includeURI, loaded, _.merge({}, context))
+        let includeLoc = el.getAttribute('schemaLocation') || el.getAttribute('location')
+        if (includeLoc) this.loadDocument(getURI(includeLoc, baseURI), loaded, _.merge({}, context))
         break
 
       case 'schema':
@@ -219,48 +208,13 @@ export default function (loaded, context) {
   }
 
   /*
-   * SOAP Namespace
-   */
-  else if (isSoapNS) {
-    switch (tag) {
-      case 'address':
-        _.set(this, `${parentPath}.$soap.address`, el.getAttribute('location'))
-        break
-
-      case 'binding':
-        setAttributes(this, `${parentPath}.$soap`, el)
-        break
-
-      case 'operation':
-        setAttributes(this, `${parentPath}.$soap`, el)
-        break
-
-      case 'body':
-        setAttributes(this, `${parentPath}.$soap`, el)
-        break
-
-      case 'fault':
-        setAttributes(this, `${parentPath}.$soap`, el, ['name'])
-        break
-
-      default:
-        break
-    }
-  }
-
-  /*
-   * All other namespaces
+   * add all other NS as properties
    */
   else {
-    switch (_.toLower(tag)) {
-      case 'xml':
-        let val = el.nodeValue || el.data
-        this.doctype = val ? `<?xml ${val}?>` : this.doctype
-        break
-
-      default:
-        break
-    }
+    parentPath = `${parentPath}["$${tag}"]`
+    setAttributes(this, parentPath, el, ['name'])
+    if (tag === 'binding') _.set(this, `${parentPath}.$ns`, ns)
+    data = { parentPath }
   }
 
   // process the children

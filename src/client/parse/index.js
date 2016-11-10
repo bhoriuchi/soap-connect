@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { loadDocument } from '../load'
+import { loadDocument } from './load'
 import { SOAP_DEFINITION } from './const'
 import { getTag, getURI, setIf, getXmlnsFromNS } from '../common'
 
