@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import xmldom from 'xmldom'
-import { getTag, getPrefixByNS, getType } from '../common'
+import { getTag, getPrefixByNS, getType } from './common'
 import { XSD_NS, XSI_NS } from './const'
 
 export function parseType (meta, obj, nsMap, ns, tag) {

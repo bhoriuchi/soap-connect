@@ -202,6 +202,10 @@ export default function (loaded, context) {
         _.set(this, `${parentPath}.extension`, el.getAttribute('base'))
         break
 
+      case 'sequence':
+        if (!_.has(this, parentPath)) _.set(this, parentPath, {})
+        break
+
       default:
         break
     }

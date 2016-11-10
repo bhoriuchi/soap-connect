@@ -6,6 +6,7 @@ import request from 'request'
 import xmldom from 'xmldom'
 import parse from './parse'
 
+const STORE_VERSION = '0.1.0'
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
 const STORAGE_PATH = path.resolve(`${BASE_DIR}/.localStorage`)
 
@@ -18,7 +19,7 @@ export class WSDL extends EventEmitter {
     this.options = options
 
     return new Promise((resolve, reject) => {
-      let [ resolving, loaded, store ] = [ [], [], null ]
+      let [ resolving, loaded, store, storeCompatible ] = [ [], [], null, true ]
       let useCache = _.get(this.options, 'cache', true)
 
       if (useCache) {
@@ -26,9 +27,10 @@ export class WSDL extends EventEmitter {
         let cache = store.getItem(this.address)
         if (cache) {
           let meta = JSON.parse(cache)
+          storeCompatible = meta.storeVersion === STORE_VERSION
           this.doctype = meta.doctype || this.doctype
           this.namespaces = meta.namespaces || this.namespaces
-          return resolve(this)
+          if (storeCompatible) return resolve(this)
         }
       }
 
@@ -40,8 +42,9 @@ export class WSDL extends EventEmitter {
         if (!resolving.length) {
           this.removeAllListeners()
           this.mergeOperations()
-          if (useCache && store) {
+          if ((useCache || !storeCompatible) && store) {
             store.setItem(this.address, JSON.stringify({
+              storeVersion: STORE_VERSION,
               doctype: this.doctype,
               namespaces: this.namespaces
             }))
@@ -55,6 +58,7 @@ export class WSDL extends EventEmitter {
 
   loadDocument (uri, loaded, context = {}) {
     if (!_.includes(loaded, uri)) {
+      loaded.push(uri)
       console.log('loading', uri)
       this.emit('wsdl.load.start', uri)
       request(uri, (err, res, body) => {
@@ -62,7 +66,6 @@ export class WSDL extends EventEmitter {
         let baseURI = `${uri.substring(0, uri.lastIndexOf('/'))}/`
         let el = new xmldom.DOMParser().parseFromString(body)
         this.parse(loaded, _.merge({}, context, { baseURI, el }))
-        loaded.push(uri)
         this.emit('wsdl.load.end', uri)
       })
     }

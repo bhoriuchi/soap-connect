@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import url from 'url'
 import request from 'request'
-import { SOAP } from './const'
+import { SOAP, XS } from './const'
 
 export function formatXML (xml) {
   return xml.replace(/(>)\s*(<)(\/*)/g, '$1\r\n$2$3')
@@ -21,22 +21,21 @@ export function getSoapDefinition (binding) {
   return _.get(SOAP, _.get(binding, '$binding.$ns'))
 }
 
-export function getSoapPrefix (wsdl, soap) {
-  return _.get(_.without(_.get(wsdl.namespaces, `["${soap.wsdl}"].$alias`), ''), '[0]', 'soap')
-}
-
 export function serialize (obj) {
   let xml = ''
   _.forEach(obj, (child, tag) => {
     let attrStr = _.map(obj.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
     attrStr = attrStr ? ` ${attrStr}` : ''
+    child = _.isArray(child) ? child : [child]
 
     if (tag === '$value') {
       xml = child
     } else {
-      xml += `<${tag}${attrStr}>`
-      xml += serialize(child)
-      xml += `</${tag}>`
+      _.forEach(child, (c) => {
+        xml += `<${tag}${attrStr}>`
+        xml += serialize(c)
+        xml += `</${tag}>`
+      })
     }
   })
   return xml
@@ -57,23 +56,23 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
       try {
         let xml = ''
         let inputEl = getMsgElement(wsdl, _.get(op, 'input.message'))
-        let { prefix, name } = wsdl.splitType(inputEl)
+        let { prefix, name, ns } = wsdl.getNsInfoByType(inputEl)
         let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
         let typeObj = typeFn(args)
-        // console.log(typeObj)
-        let body = serialize(typeObj)
+        console.log(JSON.stringify(typeObj, null, '  '))
+        console.log('===============')
+        let body = '' // serialize(typeObj)
 
         xml += wsdl.doctype
-        xml += `<soapenv:Envelope xmlns:soapenv="${soap.envelope}" ${nsList.join(' ')}>`
+        xml += `<soapenv:Envelope xmlns="${XS}" xmlns:soapenv="${soap.envelope}" ${nsList.join(' ')}>`
         xml += `<soapenv:Header/>`
         xml += `<soapenv:Body>`
         xml += body
         xml += `</soapenv:Body>`
         xml += `</soapenv:Envelope>`
 
-        // console.log(formatXML(xml))
-
-        // return resolve(formatXML(xml))
+        return resolve(formatXML(xml))
+        /*
         request.post({
           headers: {
             'Content-Type': soap.contentType,
@@ -89,6 +88,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
           callback(null, body)
           return resolve(body)
         })
+        */
       } catch (err) {
         callback(err)
         return reject(err)
