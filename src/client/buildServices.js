@@ -1,7 +1,6 @@
 import _ from 'lodash'
 import url from 'url'
 import request from 'request'
-import serialize from './serialize/index'
 import { SOAP } from './const'
 
 export function formatXML (xml) {
@@ -26,6 +25,23 @@ export function getSoapPrefix (wsdl, soap) {
   return _.get(_.without(_.get(wsdl.namespaces, `["${soap.wsdl}"].$alias`), ''), '[0]', 'soap')
 }
 
+export function serialize (obj) {
+  let xml = ''
+  _.forEach(obj, (child, tag) => {
+    let attrStr = _.map(obj.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
+    attrStr = attrStr ? ` ${attrStr}` : ''
+
+    if (tag === '$value') {
+      xml = child
+    } else {
+      xml += `<${tag}${attrStr}>`
+      xml += serialize(child)
+      xml += `</${tag}>`
+    }
+  })
+  return xml
+}
+
 export function soapOperation (client, endpoint, op, soap, nsList) {
   let wsdl = client.wsdl
 
@@ -41,7 +57,11 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
       try {
         let xml = ''
         let inputEl = getMsgElement(wsdl, _.get(op, 'input.message'))
-        let body = serialize(client, inputEl, args)
+        let { prefix, name } = wsdl.splitType(inputEl)
+        let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
+        let typeObj = typeFn(args)
+        // console.log(typeObj)
+        let body = serialize(typeObj)
 
         xml += wsdl.doctype
         xml += `<soapenv:Envelope xmlns:soapenv="${soap.envelope}" ${nsList.join(' ')}>`
@@ -53,8 +73,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
 
         // console.log(formatXML(xml))
 
-        return resolve(formatXML(xml))
-        /*
+        // return resolve(formatXML(xml))
         request.post({
           headers: {
             'Content-Type': soap.contentType,
@@ -70,8 +89,6 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
           callback(null, body)
           return resolve(body)
         })
-        */
-
       } catch (err) {
         callback(err)
         return reject(err)
@@ -85,9 +102,7 @@ export default function buildServices (client) {
   let services = {}
   let nsList = []
   _.forEach(wsdl.namespaces, (ns, nsName) => {
-    _.forEach(ns.$alias, (alias) => {
-      if (alias) nsList.push(`xmlns:${alias}="${nsName}"`)
-    })
+    nsList.push(`xmlns:${ns.$requestNamespace}="${nsName}"`)
     _.forEach(ns.services, (svc, svcName) => {
       _.forEach(svc, (port, portName) => {
         let endpoint = getEndpointFromPort(client, port)

@@ -9,6 +9,8 @@ export function getWsdlFn (wsdl, types, type, nsName) {
 
 export default function buildTypes (client) {
   let wsdl = client.wsdl
+  let nsCount = 1
+
   let types = {
     'http://www.w3.org/2001/XMLSchema': _.mapValues(xsd, () => {
       return (obj) => {
@@ -18,10 +20,13 @@ export default function buildTypes (client) {
   }
 
   _.forEach(wsdl.namespaces, (ns, nsName) => {
+    let reqNs = ns.$requestNamespace = `ns${nsCount}`
+    nsCount++
+
     _.forEach(ns.types, (type, typeName) => {
       _.set(types, `["${nsName}"]["${typeName}"]`, (obj) => {
         if (type.type) {
-          return { [typeName]: getWsdlFn(wsdl, types, type.type, nsName)(obj) }
+          return { [`${reqNs}:${typeName}`]: getWsdlFn(wsdl, types, type.type, nsName)(obj) }
         }
 
         let [t, extension] = [{}, _.get(type, 'extension')]
@@ -37,7 +42,7 @@ export default function buildTypes (client) {
           let p = _.get(obj, propName)
           if (p) {
             // if (_.includes(xsdTypes, prop.type)) t[propName] = p
-            t[propName] = getWsdlFn(wsdl, types, prop.type, nsName)(obj[propName])
+            t[`${reqNs}:${propName}`] = getWsdlFn(wsdl, types, prop.type, nsName)(obj[propName])
           }
         })
 
