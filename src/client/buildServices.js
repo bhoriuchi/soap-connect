@@ -23,7 +23,8 @@ export function getSoapDefinition (binding) {
 
 export function serialize (obj) {
   let xml = ''
-  _.forEach(obj, (child, tag) => {
+  if (!_.isObject(obj)) return obj
+  _.forEach(_.omit(obj, ['$attributes']), (child, tag) => {
     let attrStr = _.map(obj.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
     attrStr = attrStr ? ` ${attrStr}` : ''
     child = _.isArray(child) ? child : [child]
@@ -32,6 +33,7 @@ export function serialize (obj) {
       xml = child
     } else {
       _.forEach(child, (c) => {
+        console.log(c)
         xml += `<${tag}${attrStr}>`
         xml += serialize(c)
         xml += `</${tag}>`
@@ -61,7 +63,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         let typeObj = typeFn(args)
         console.log(JSON.stringify(typeObj, null, '  '))
         console.log('===============')
-        let body = '' // serialize(typeObj)
+        let body = serialize(typeObj)
 
         xml += wsdl.doctype
         xml += `<soapenv:Envelope xmlns="${XS}" xmlns:soapenv="${soap.envelope}" ${nsList.join(' ')}>`

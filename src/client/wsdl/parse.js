@@ -177,7 +177,13 @@ export default function (loaded, context) {
 
       case 'element':
         let elPath = (parent === 'schema') ? `${parentPath}["${name}"]` : `${parentPath}.props["${name}"]`
-        setAttributes(this, elPath, el, ['name'])
+        setAttributes(this, elPath, el, ['name', 'minOccurs', 'maxOccurs'])
+        let [minOccurs, maxOccurs] = [el.getAttribute('minOccurs'), el.getAttribute('maxOccurs')]
+        if (minOccurs || maxOccurs) {
+          minOccurs = minOccurs ? Number(minOccurs) : null
+          maxOccurs = maxOccurs === 'unbounded' ? 1 : Number(maxOccurs)
+          _.set(this, `${elPath}.isMany`, minOccurs >= 0 && maxOccurs !== 0)
+        }
         data = { parentPath: parent === 'schema' ? elPath : parentPath }
         break
 

@@ -1,6 +1,7 @@
 import cred from '../credentials'
 import SoapClient from '../src/client/index'
 import _ from 'lodash'
+import fs from 'fs'
 
 let testSvcs = {
   // wsdl: 'http://www.webservicex.net/CurrencyConvertor.asmx?WSDL'
@@ -13,6 +14,9 @@ let testSvcs = {
 let start = Date.now()
 
 SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
+  // console.log(client.wsdl)
+  fs.writeFileSync('meta.txt', JSON.stringify(client.wsdl, null, '  '))
+  // console.log('Run time:', (Date.now() - start) / 1000, 'seconds')
   // console.log(JSON.stringify(client.wsdl.namespaces, null, '  '))
   // console.log(client._wsdl.namespaces['urn:vim25'].messages)
   // console.log('res', JSON.stringify(_.omit(res, ['types']), null, '  '))
@@ -31,6 +35,7 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   }), null, '  '))
 */
 
+  /*
   return client.services.VimService.VimPort.CustomizeVM_Task({
     _this: { $value: 'ServiceInstance', $attributes: { type: 'VirtualMachine' } },
     spec: {
@@ -43,7 +48,7 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
       console.log(res)
       console.log('Run time:', (Date.now() - start) / 1000, 'seconds')
     })
-
+*/
   /*
   return client.services.TempConvert.TempConvertSoap.FahrenheitToCelsius({ Fahrenheit: '100' }).then((res) => {
     console.log(res)
@@ -53,13 +58,65 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
     })
     */
 
-  /*
-  return client.services.VimService.VimPort.RetrieveServiceContent({ _this: 'ServiceInstance' })
+  return client.services.VimService.VimPort.RetrievePropertiesEx({
+      "_this": {
+        "$attributes": {
+          "type": "PropertyCollector"
+        },
+        "$value": "ha-property-collector"
+      },
+      "specSet": [
+        {
+          "$attributes": {
+            "xsi:type": "PropertyFilterSpec"
+          },
+          "propSet": [
+            {
+              "$attributes": {
+                "xsi:type": "PropertySpec"
+              },
+              "type": "VirtualMachine",
+              "pathSet": [
+                "name"
+              ]
+            }
+          ],
+          "objectSet": [
+            {
+              "$attributes": {
+                "xsi:type": "ObjectSpec"
+              },
+              "obj": {
+                "$attributes": {
+                  "type": "ContainerView"
+                },
+                "$value": "session[52f7c835-1548-257e-7de1-fa42dbdf50ba]528d41dc-d50e-7d1d-43e1-313ccf355722"
+              },
+              "skip": true,
+              "selectSet": [
+                {
+                  "$attributes": {
+                    "xsi:type": "TraversalSpec"
+                  },
+                  "type": "ContainerView",
+                  "path": "view"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "options": {
+        "$attributes": {
+          "xsi:type": "RetrieveOptions"
+        }
+      }
+    }
+  )
     .then((res) => {
       console.log(res)
       console.log('Run time:', (Date.now() - start) / 1000, 'seconds')
     })
-  */
   // let o = client.types.vim25.RetrieveServiceContent({ _this: 'ServiceInstance' })
   // let o = client._meta.namespaces.vim25.types.ManagedObjectReference
   // console.log(JSON.stringify(o, null, '  '))
