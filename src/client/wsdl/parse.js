@@ -182,7 +182,8 @@ export default function (loaded, context) {
         if (minOccurs || maxOccurs) {
           minOccurs = minOccurs ? Number(minOccurs) : null
           maxOccurs = maxOccurs === 'unbounded' ? 1 : Number(maxOccurs)
-          _.set(this, `${elPath}.isMany`, minOccurs >= 0 && maxOccurs !== 0)
+          let isMany = minOccurs >= 0 && maxOccurs !== 0
+          if (isMany) _.set(this, `${elPath}.isMany`, true)
         }
         data = { parentPath: parent === 'schema' ? elPath : parentPath }
         break

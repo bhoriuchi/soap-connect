@@ -5,6 +5,8 @@ import LocalStorage from 'node-localstorage'
 import request from 'request'
 import xmldom from 'xmldom'
 import parse from './parse'
+import { XS } from '../const'
+import XSD from './namespaces/xsd1.0'
 
 const STORE_VERSION = '0.1.0'
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
@@ -29,7 +31,7 @@ export class WSDL extends EventEmitter {
           let meta = JSON.parse(cache)
           storeCompatible = meta.storeVersion === STORE_VERSION
           this.doctype = meta.doctype || this.doctype
-          this.namespaces = meta.namespaces || this.namespaces
+          this.namespaces = _.merge(meta.namespaces || this.namespaces, { [XS]: { types: XSD } })
           if (storeCompatible) return resolve(this)
         }
       }
@@ -46,7 +48,7 @@ export class WSDL extends EventEmitter {
             store.setItem(this.address, JSON.stringify({
               storeVersion: STORE_VERSION,
               doctype: this.doctype,
-              namespaces: this.namespaces
+              namespaces: _.merge(this.namespaces, { [XS]: { types: XSD } })
             }))
           }
           return resolve(this)
@@ -74,6 +76,11 @@ export class WSDL extends EventEmitter {
   splitType (type) {
     let [prefix, name] = type.indexOf(':') !== -1 ? type.split(':') : ['', type]
     return { prefix, name }
+  }
+
+  isSimple (type) {
+    let typeWsdl = this.getTypeWsdl(type)
+    return typeWsdl.isSimple || _.has(type, 'enums') || !_.keys(typeWsdl).length
   }
 
   getNsInfoByType (type) {
