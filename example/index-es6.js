@@ -58,6 +58,18 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
     })
     */
 
+  console.log(client.types.vim25.ManagedObjectReference({
+    type: 'ServiceInstance',
+    value: 'ServiceInstance'
+  }))
+
+  return client.services.VimService.VimPort.RetrieveServiceContent({
+    _this: {
+      $attributes: { type: 'ServiceInstance' },
+      $value: 'ServiceInstance'
+    }
+  })
+  /*
   return client.services.VimService.VimPort.RetrievePropertiesEx({
       "_this": {
         "$attributes": {
@@ -95,9 +107,6 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
               "skip": true,
               "selectSet": [
                 {
-                  "$attributes": {
-                    "xsi:type": "TraversalSpec"
-                  },
                   "type": "ContainerView",
                   "path": "view"
                 }
@@ -113,6 +122,7 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
       }
     }
   )
+  */
     .then((res) => {
       console.log(res)
       console.log('Run time:', (Date.now() - start) / 1000, 'seconds')

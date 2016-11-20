@@ -18,18 +18,16 @@ export function getInheritance (ns, typeName) {
 
 export function bestTypeMatch (ns, type, inherit, data) {
   let [ pfx, typeName ] = type.split(':')
-  let typeKeys = _.keys(_.get(ns, `["${typeName}"].props`))
+  let typeKeys = _.keys(_.get(ns, `types["${typeName}"].props`))
   let dataKeys = !_.isArray(data) ? _.isObject(data) ? _.keys(data) : [] : _.reduce(data, (l, r) => {
     return _.isObject(r) && !_.isArray(r) ? _.union(l, _.keys(r)) : _.union(l, [])
   }, [])
-  let interCount = _.intersection(typeKeys, dataKeys)
+  let interCount = _.intersection(typeKeys, dataKeys).length
 
   _.forEach(inherit, (i) => {
-    console.log(i)
-    let cTypeKeys = _.keys(_.get(ns, `["${i}"].props`))
-    let cInter = _.intersection(cTypeKeys, dataKeys)
+    let cTypeKeys = _.keys(_.get(ns, `types["${i}"].props`))
+    let cInter = _.intersection(cTypeKeys, dataKeys).length
     if (cInter > interCount) {
-      console.log('switching type to', i)
       interCount = cInter
       typeName = i
     }
@@ -61,11 +59,13 @@ export default function buildTypes (client) {
         if (type.type) return { [`${reqNs}:${typeName}`]: getWsdlFn(wsdl, types, type.type, nsName)(obj) }
         let [t, extension] = [{}, _.get(type, 'extension')]
         if (extension && !wsdl.isSimple(extension)) _.merge(t, getWsdlFn(wsdl, types, extension, nsName)(obj))
+        _.set(t, '$attributes.type', typeName)
 
         _.forEach(type.attrs, (attr, attrName) => {
           let a = _.get(obj, `$attributes["${attrName}"]`)
           if (a !== undefined) _.set(t, `$attributes["${attrName}"]`, a)
         })
+
         let xsiType = _.get(obj, '$attributes.xsi:type')
         if (xsiType) _.set(t, '$attributes.type', xsiType)
         if (obj.$value !== undefined) t.$value = obj.$value
@@ -73,7 +73,6 @@ export default function buildTypes (client) {
         _.forEach(type.props, (prop, propName) => {
           let [ pfx ] = prop.type.split(':')
           let inherit = _.includes(ns.$alias, pfx) ? getInheritance(ns, prop.type) : []
-          if (inherit.length) console.log(prop.type, inherit)
           let isSimple = wsdl.isSimple(prop.type)
           let p = _.get(obj, propName)
           let propType = bestTypeMatch(ns, prop.type, inherit, p)

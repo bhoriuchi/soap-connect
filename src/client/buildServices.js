@@ -21,24 +21,28 @@ export function getSoapDefinition (binding) {
   return _.get(SOAP, _.get(binding, '$binding.$ns'))
 }
 
-export function serialize (obj) {
-  let xml = ''
-  if (!_.isObject(obj)) return obj
-  _.forEach(_.omit(obj, ['$attributes']), (child, tag) => {
-    let attrStr = _.map(obj.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
-    attrStr = attrStr ? ` ${attrStr}` : ''
-    child = _.isArray(child) ? child : [child]
+export function makeIndent (levels = 0, fill = '  ') {
+  return (new Array(levels)).fill(fill, 0, levels).join('')
+}
 
-    if (tag === '$value') {
-      xml = child
-    } else {
-      _.forEach(child, (c) => {
-        console.log(c)
-        xml += `<${tag}${attrStr}>`
-        xml += serialize(c)
-        xml += `</${tag}>`
+export function serialize (obj, indent = 0) {
+  let xml = ''
+  _.forEach(_.omit(obj, ['$attributes']), (o, tag) => {
+    let attrStr = _.map(o.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
+    attrStr = attrStr && indent ? ` ${attrStr}` : ''
+    xml += `<${tag}${attrStr}>`
+    if (!_.isObject(o)) {
+      xml += o
+    } else if (o.$value) {
+      xml += o.$value
+    } else if (_.isArray(o)) {
+      _.forEach(o, (i) => {
+        xml += !_.isObject(i) ? i : serialize(i, 1)
       })
+    } else {
+      xml += !_.isObject(o) ? o : serialize(o, 1)
     }
+    xml += `</${tag}>`
   })
   return xml
 }
@@ -47,13 +51,13 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
   let wsdl = client.wsdl
 
   return (args = {}, options, callback) => {
+    let st = Date.now()
     if (_.isFunction(options)) {
       callback = options
       options = {}
     }
     options = options || {}
     callback = _.isFunction(callback) ? callback : () => false
-
     return new Promise((resolve, reject) => {
       try {
         let xml = ''
@@ -61,8 +65,6 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         let { prefix, name, ns } = wsdl.getNsInfoByType(inputEl)
         let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
         let typeObj = typeFn(args)
-        console.log(JSON.stringify(typeObj, null, '  '))
-        console.log('===============')
         let body = serialize(typeObj)
 
         xml += wsdl.doctype
@@ -73,8 +75,6 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         xml += `</soapenv:Body>`
         xml += `</soapenv:Envelope>`
 
-        return resolve(formatXML(xml))
-        /*
         request.post({
           headers: {
             'Content-Type': soap.contentType,
@@ -90,7 +90,6 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
           callback(null, body)
           return resolve(body)
         })
-        */
       } catch (err) {
         callback(err)
         return reject(err)
