@@ -78,6 +78,12 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
         userName: cred.username,
         password: cred.password
       })
+        .then((session) => {
+          let cookie = _.first(_.get(client.lastResponse.headers, '["set-cookie"][0]').split(';'))
+          // console.log(client.lastResponse.headers)
+          client.setSecurity(client.Security.CookieSecurity(cookie))
+          return session
+        })
     })
   /*
   return client.services.VimService.VimPort.RetrievePropertiesEx({

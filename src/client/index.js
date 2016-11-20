@@ -2,6 +2,7 @@ import _ from 'lodash'
 import url from 'url'
 import EventEmitter from 'events'
 import WSDL from './wsdl/index'
+import Security from './security/index'
 import buildServices from './buildServices'
 import buildTypes from './buildTypes'
 
@@ -18,6 +19,9 @@ export class SoapConnectClient extends EventEmitter {
     this.options = options
     this.types = {}
     this.services = {}
+    this.lastResponse = null
+    this.Security = Security
+    this._security = new Security.Security()
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
     let loadWSDL = WSDL(wsdlAddress, options)
@@ -31,6 +35,11 @@ export class SoapConnectClient extends EventEmitter {
       callback(this)
       return this
     })
+  }
+
+  setSecurity (security) {
+    if (!(security instanceof Security.Security)) throw new Error('Invalid security object')
+    this._security = security
   }
 }
 

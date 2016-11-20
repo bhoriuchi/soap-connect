@@ -107,11 +107,11 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         xml += `</soapenv:Body>`
         xml += `</soapenv:Envelope>`
 
+        let headers = { 'Content-Type': soap.contentType, 'Content-Length': xml.length }
+        client._security.addHttpHeaders(headers)
+
         request.post({
-          headers: {
-            'Content-Type': soap.contentType,
-            'Content-Length': xml.length
-          },
+          headers,
           url: endpoint,
           body: xml
         }, (err, res, body) => {
@@ -119,7 +119,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
             callback(err)
             return reject(err)
           }
-
+          client.lastResponse = res
           let doc = deserialize(new xmldom.DOMParser().parseFromString(body.replace(/\n/g, '')))
           let fault = _.get(doc, 'Envelope.Body.Fault')
           if (fault) {
