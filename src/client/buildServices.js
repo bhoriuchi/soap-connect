@@ -119,8 +119,15 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
             callback(err)
             return reject(err)
           }
-          let doc = new xmldom.DOMParser().parseFromString(body.replace(/\n/g, ''))
-          let out = _.get(deserialize(doc), `Envelope.Body["${outputEl}"]`)
+
+          let doc = deserialize(new xmldom.DOMParser().parseFromString(body.replace(/\n/g, '')))
+          let fault = _.get(doc, 'Envelope.Body.Fault')
+          if (fault) {
+            let fullError = _.merge({}, fault, { requestBody: xml, responseBody: body })
+            callback(fullError)
+            return reject(fullError)
+          }
+          let out = _.get(doc, `Envelope.Body["${outputEl}"]`)
           callback(null, out)
           return resolve(out)
         })

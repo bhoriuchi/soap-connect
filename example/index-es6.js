@@ -14,6 +14,7 @@ let testSvcs = {
 let start = Date.now()
 
 SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
+  let vim = client.services.VimService.VimPort
   // console.log(client.wsdl)
   fs.writeFileSync('meta.txt', JSON.stringify(client.wsdl, null, '  '))
   // console.log('Run time:', (Date.now() - start) / 1000, 'seconds')
@@ -65,12 +66,19 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   }))
   */
 
-  return client.services.VimService.VimPort.RetrieveServiceContent({
+  return vim.RetrieveServiceContent({
     _this: {
       $attributes: { type: 'ServiceInstance' },
       $value: 'ServiceInstance'
     }
   })
+    .then((sc) => {
+      return vim.Login({
+        _this: sc.returnval.sessionManager,
+        userName: cred.username,
+        password: cred.password
+      })
+    })
   /*
   return client.services.VimService.VimPort.RetrievePropertiesEx({
       "_this": {
