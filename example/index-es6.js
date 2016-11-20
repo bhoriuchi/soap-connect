@@ -58,10 +58,12 @@ SoapClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
     })
     */
 
+  /*
   console.log(client.types.vim25.ManagedObjectReference({
     type: 'ServiceInstance',
     value: 'ServiceInstance'
   }))
+  */
 
   return client.services.VimService.VimPort.RetrieveServiceContent({
     _this: {

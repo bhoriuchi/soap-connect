@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import url from 'url'
 import request from 'request'
+import xmldom from 'xmldom'
 import { SOAP, XS } from './const'
 
 export function formatXML (xml) {
@@ -47,6 +48,36 @@ export function serialize (obj, indent = 0) {
   return xml
 }
 
+export function mapAttributes (el) {
+  let attrs = {}
+  _.forEach(el.attributes, (attr) => {
+    let { name, value } = attr
+    if (name && value !== undefined) attrs[name] = value
+  })
+  if (_.keys(attrs).length) return attrs
+}
+
+export function deserialize (el) {
+  let j = {}
+  _.forEach(el.childNodes, (node) => {
+    if (node.localName) {
+      let first = _.get(node, 'firstChild.data')
+      if (first !== undefined && !_.isObject(first)) {
+        let subAttrs = mapAttributes(node)
+        j[node.localName] = subAttrs ? { $attributes: subAttrs, $value: first } : first
+      } else if (node.data !== undefined && !_.isObject(node.data)) {
+        j[node.localName] = node.data
+      } else if (node.data === undefined) {
+        j[node.localName] = deserialize(node)
+      }
+    } else if (_.isString(node.data) && node.data.replace(/\s*/) !== '') {
+      j.$value = node.data
+    }
+  })
+
+  return j
+}
+
 export function soapOperation (client, endpoint, op, soap, nsList) {
   let wsdl = client.wsdl
 
@@ -62,6 +93,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
       try {
         let xml = ''
         let inputEl = getMsgElement(wsdl, _.get(op, 'input.message'))
+        let outputEl = wsdl.splitType(getMsgElement(wsdl, _.get(op, 'output.message'))).name
         let { prefix, name, ns } = wsdl.getNsInfoByType(inputEl)
         let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
         let typeObj = typeFn(args)
@@ -87,8 +119,10 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
             callback(err)
             return reject(err)
           }
-          callback(null, body)
-          return resolve(body)
+          let doc = new xmldom.DOMParser().parseFromString(body.replace(/\n/g, ''))
+          let out = _.get(deserialize(doc), `Envelope.Body["${outputEl}"]`)
+          callback(null, out)
+          return resolve(out)
         })
       } catch (err) {
         callback(err)
