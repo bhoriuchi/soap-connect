@@ -2,7 +2,7 @@ import _ from 'lodash'
 import url from 'url'
 import EventEmitter from 'events'
 import WSDL from './wsdl/index'
-import Security from './security/index'
+import Security from '../security/index'
 import buildServices from './buildServices'
 import buildTypes from './buildTypes'
 
@@ -20,7 +20,6 @@ export class SoapConnectClient extends EventEmitter {
     this.types = {}
     this.services = {}
     this.lastResponse = null
-    this.Security = Security
     this._security = new Security.Security()
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
