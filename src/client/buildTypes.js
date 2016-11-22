@@ -4,7 +4,9 @@ import xsd from './wsdl/namespaces/xsd1.0'
 export function getWsdlFn (wsdl, types, type, nsName) {
   let { ns, name } = wsdl.getNsInfoByType(type)
   let typeFn = _.get(types, `["${ns || nsName}"]["${name}"]`)
-  return _.isFunction(typeFn) ? typeFn : () => {}
+  return _.isFunction(typeFn) ? typeFn : () => {
+    console.error('!!!!failed to find', type)
+  }
 }
 
 export function getInheritance (ns, typeName) {
@@ -32,7 +34,6 @@ export function bestTypeMatch (ns, type, inherit, data) {
       typeName = i
     }
   })
-
   return `${pfx}:${typeName}`
 }
 
@@ -43,7 +44,11 @@ export default function buildTypes (client) {
   let types = {
     'http://www.w3.org/2001/XMLSchema': _.mapValues(xsd, () => {
       return (obj) => {
-        return { $value: obj.$value || obj }
+        console.log(obj)
+        return {
+          $attributes: obj.$attributes,
+          $value: obj.$value || obj
+        }
       }
     })
   }
@@ -76,6 +81,7 @@ export default function buildTypes (client) {
           let isSimple = wsdl.isSimple(prop.type)
           let p = _.get(obj, propName)
           let propType = bestTypeMatch(ns, prop.type, inherit, p)
+
           if (p) {
             if (prop.isMany) {
               t[`${reqNs}:${propName}`] = _.map(p, (v) => {

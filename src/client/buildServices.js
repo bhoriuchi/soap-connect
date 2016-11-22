@@ -3,6 +3,7 @@ import url from 'url'
 import request from 'request'
 import xmldom from 'xmldom'
 import { SOAP, XS } from './const'
+import chalk from 'chalk'
 
 export function formatXML (xml) {
   return xml.replace(/(>)\s*(<)(\/*)/g, '$1\r\n$2$3')
@@ -26,7 +27,7 @@ export function makeIndent (levels = 0, fill = '  ') {
   return (new Array(levels)).fill(fill, 0, levels).join('')
 }
 
-export function serialize (obj, indent = 0) {
+export function serialize1 (obj, indent = 0) {
   let xml = ''
   _.forEach(_.omit(obj, ['$attributes']), (o, tag) => {
     let attrStr = _.map(o.$attributes, (attr, attrName) => `${attrName}="${attr}"`).join(' ')
@@ -45,6 +46,20 @@ export function serialize (obj, indent = 0) {
     }
     xml += `</${tag}>`
   })
+  return xml
+}
+
+export function serialize (obj) {
+  let xml = ''
+
+  if (_.isArray(obj)) {
+    _.forEach(obj, )
+  } else if (_.isObject(obj)) {
+    _.forEach(obj, (o, tag))
+  } else {
+
+  }
+
   return xml
 }
 
@@ -97,17 +112,24 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         let { prefix, name, ns } = wsdl.getNsInfoByType(inputEl)
         let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
         let typeObj = typeFn(args)
-        let body = serialize(typeObj)
+        let opTag = _.first(_.keys(typeObj))
+        let body = serialize(_.omit(_.get(typeObj, opTag), ['$attributes']))
 
         xml += wsdl.doctype
         xml += `<soapenv:Envelope xmlns="${XS}" xmlns:soapenv="${soap.envelope}" ${nsList.join(' ')}>`
         xml += `<soapenv:Header/>`
         xml += `<soapenv:Body>`
+        xml += `<${opTag}>`
         xml += body
+        xml += `</${opTag}>`
         xml += `</soapenv:Body>`
         xml += `</soapenv:Envelope>`
 
-        let headers = { 'Content-Type': soap.contentType, 'Content-Length': xml.length }
+        let headers = {
+          'Content-Type': soap.contentType,
+          'Content-Length': xml.length,
+          'SOAPAction': _.get(op, '$operation.soapAction')
+        }
         client._security.addHttpHeaders(headers)
 
         request.post({

@@ -1,6 +1,7 @@
 import cred from '../credentials'
 import soap from '../src/index'
 import _ from 'lodash'
+import fs from 'fs'
 
 let testSvcs = {
   // wsdl: 'http://www.webservicex.net/CurrencyConvertor.asmx?WSDL'
@@ -14,6 +15,8 @@ let start = Date.now()
 
 soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   let vim = client.services.VimService.VimPort
+
+
   return vim.RetrieveServiceContent({
     _this: {
       $attributes: { type: 'ServiceInstance' },
@@ -22,6 +25,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   })
     .then((si) => {
       let sc = si.returnval
+
       return vim.Login({
         _this: sc.sessionManager,
         userName: cred.username,
@@ -34,17 +38,17 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
           return vim.CreateContainerView({
             _this: sc.viewManager,
             container: sc.rootFolder,
-            type: 'VirtualMachine',
+            type: ['VirtualMachine'],
             recursive: true
           })
             .then((view) => {
-              return vim.RetrievePropertiesEx({
+              let allVMs = {
                 _this: sc.propertyCollector,
                 specSet: [
                   {
-                    objSet: [
+                    objectSet: [
                       {
-                        obj: view,
+                        obj: view.returnval,
                         skip: true,
                         selectSet: [
                           {
@@ -65,12 +69,21 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
                   }
                 ],
                 options: {}
-              })
+              }
+
+              // console.log(JSON.stringify(client.types.vim25.RetrievePropertiesEx(allVMs), null, '  '))
+
+              return vim.RetrievePropertiesEx(allVMs)
                 .then((vms) => {
                   console.log(vms)
                   return vms
                 })
             })
+        })
+        .then(() => {
+          return vim.Logout({
+            _this: sc.sessionManager
+          })
         })
     })
     .then((res) => {
@@ -79,5 +92,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
     })
 })
 .catch((err) => {
-  console.error('err', err)
+  // console.error('err', err)
+  console.error(err.faultString)
+  console.error('====================')
+  console.error(err.requestBody.replace(/(>)\s*(<)(\/*)/g, '$1\r\n$2$3'))
 })
