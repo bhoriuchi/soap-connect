@@ -16,6 +16,16 @@ export const SOAP = {
 export const XS = 'http://www.w3.org/2001/XMLSchema'
 export const WSDL = 'http://schemas.xmlsoap.org/wsdl/'
 
+export const META_KEY = {
+  TYPE: '$t',
+  ATTRIBUTES: '$a',
+  EXTENSION: '$e',
+  MESSAGE: '$m',
+  PROPERTIES: '$p',
+  ISMANY: '$l',
+  ENUMS: '$n'
+}
+
 export default {
   SOAP,
   XS,

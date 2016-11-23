@@ -1,9 +1,16 @@
+import _ from 'lodash'
 import Security from './Security'
 
 export class CookieSecurity extends Security {
   constructor (cookie, options) {
     super(options)
-    this.cookie = cookie
+
+    cookie = _.get(cookie, 'set-cookie', cookie)
+    let cookies = _.map(_.isArray(cookie) ? cookie : [cookie], (c) => {
+      return c.split(';')[0]
+    })
+
+    this.cookie = cookies.join('; ')
   }
 
   addHttpHeaders (headers) {

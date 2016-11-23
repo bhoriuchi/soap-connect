@@ -113,6 +113,7 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         let typeFn = _.get(client, `types["${prefix}"]["${name}"]`)
         let typeObj = typeFn(args)
         let opTag = _.first(_.keys(typeObj))
+        console.log(chalk.blue(JSON.stringify(_.omit(_.get(typeObj, opTag), ['$attributes']), null, '  ')))
         let body = serialize(_.omit(_.get(typeObj, opTag), ['$attributes']))
 
         xml += wsdl.doctype
@@ -124,6 +125,8 @@ export function soapOperation (client, endpoint, op, soap, nsList) {
         xml += `</${opTag}>`
         xml += `</soapenv:Body>`
         xml += `</soapenv:Envelope>`
+
+        console.log(chalk.green(xml))
 
         let headers = {
           'Content-Type': soap.contentType,

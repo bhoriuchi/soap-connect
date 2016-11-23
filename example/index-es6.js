@@ -32,8 +32,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
         password: cred.password
       })
         .then((session) => {
-          let cookie = _.first(_.get(client.lastResponse.headers, '["set-cookie"][0]').split(';'))
-          client.setSecurity(soap.Security.CookieSecurity(cookie))
+          client.setSecurity(soap.Security.CookieSecurity(client.lastResponse.headers))
 
           return vim.CreateContainerView({
             _this: sc.viewManager,
