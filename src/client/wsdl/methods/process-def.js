@@ -131,6 +131,7 @@ export default function processDef (data) {
     let ops = []
     if (_.keys(def.ports).length) {
       _.forEach(def.ports, (port) => {
+        let pOps = []
         let { prefix } = getQName(port.getAttribute('binding'))
         let portNS = port.lookupNamespaceURI(prefix)
         let binding = _.get(data, `["${portNS}"].binding`)
@@ -141,7 +142,7 @@ export default function processDef (data) {
           let node = _.get(data, `["${portNS}"].operations["${name}"]`)
           let input = getOperationElement(data, _.first(node.getElementsByTagNameNS(WSDL_NS, 'input')))
           let output = getOperationElement(data, _.first(node.getElementsByTagNameNS(WSDL_NS, 'output')))
-          ops.push([
+          pOps.push([
             {
               action: _.get(data, `["${portNS}"].actions["${name}"]`).getAttribute('soapAction'),
               name: input.getAttribute('name'),
@@ -152,6 +153,7 @@ export default function processDef (data) {
             }
           ])
         })
+        ops.push(pOps)
       })
     }
     operations.push(ops)

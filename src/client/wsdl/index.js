@@ -18,7 +18,17 @@ export class WSDL extends EventEmitter {
     this.namespaces = {}
     this.address = address
     this.options = options
-    let data = {}
+    let data = {
+      actions: {},
+      attributes: {},
+      attributeGroups: {},
+      bindings: {},
+      elements: {},
+      messages: {},
+      operations: {},
+      ports: {},
+      types: {}
+    }
 
     _.forEach(methods, (method, name) => this[name] = method.bind(this))
 
