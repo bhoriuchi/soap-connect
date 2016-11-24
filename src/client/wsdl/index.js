@@ -8,34 +8,31 @@ import methods from './methods/index'
  * Strategy adapted from vSphere JS SDK  - https://labs.vmware.com/flings/vsphere-sdk-for-javascript#summary
  */
 
-const STORE_VERSION = '0.1.0'
 const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
 const STORAGE_PATH = path.resolve(`${BASE_DIR}/.localStorage`)
 
 export class WSDL extends EventEmitter {
   constructor (address, options = {}) {
     super()
-    this.namespaces = {}
     this.address = address
     this.options = options
-    let data = {
-      actions: {},
-      attributes: {},
-      attributeGroups: {},
-      bindings: {},
-      elements: {},
-      messages: {},
-      operations: {},
-      ports: {},
-      types: {}
-    }
+    let data = {}
 
     _.forEach(methods, (method, name) => this[name] = method.bind(this))
 
     return new Promise((resolve, reject) => {
-      let [ resolving, loaded, store, storeCompatible ] = [ [], [], null, true ]
+      let [ resolving, store, cache ] = [ [], null, {} ]
       let useCache = _.get(this.options, 'cache', true)
-      let cache = {}
+
+      if (useCache) {
+        store = new LocalStorage.LocalStorage(STORAGE_PATH)
+        let rawMetadata = store.getItem(this.address)
+        if (rawMetadata) {
+          let metadata = JSON.parse(rawMetadata)
+          this.metadata = metadata
+          return resolve(this)
+        }
+      }
 
       this.on('wsdl.load.error', (err) => reject(err))
       this.on('wsdl.load.start', (doc) => resolving.push(doc))
@@ -47,7 +44,10 @@ export class WSDL extends EventEmitter {
 
           // process wsdl
           this.processDocs(cache, data)
-          this.processDef(data)
+          this.metadata = this.processDef(data)
+
+          // store the metadata
+          if (useCache && store) store.setItem(this.address, JSON.stringify(this.metadata))
 
           // resolve the WSDL object
           return resolve(this)
@@ -55,6 +55,14 @@ export class WSDL extends EventEmitter {
       })
       this.loadDoc(this.address, cache)
     })
+  }
+
+  getType (t) {
+    return _.get(this.metadata, `types[${t[0]}][${t[1]}]`)
+  }
+
+  isBuiltInType (t) {
+    return _.get(this.metadata, `namespaces[${t[0]}].isBuiltIn`) === true
   }
 }
 

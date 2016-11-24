@@ -12,4 +12,4 @@ import WSDL from '../src/client/wsdl/index'
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
 console.log('start', new Date())
-WSDL(cred.wsdl)
+WSDL(cred.wsdl, { cache: true })

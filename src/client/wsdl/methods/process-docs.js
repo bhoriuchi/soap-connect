@@ -1,5 +1,6 @@
 import _ from 'lodash'
-import { XS_NS, WSDL_NS } from '../../const'
+import { getQName } from '../utils/index'
+import { XS_NS, WSDL_NS, SOAP } from '../../const'
 
 // set operations via interface or portType
 function setOperations (operations, portType) {
@@ -16,6 +17,7 @@ function processDoc (doc, data) {
   _.forEach(definitions, (node) => {
     let ns = node.getAttribute('targetNamespace')
     let nsData = data[ns] = data[ns] || {}
+    nsData.$prefix = _.findKey(node._nsMap, (o) => o === ns)
     nsData.actions = nsData.actions || {}
     nsData.messages = nsData.messages || {}
     nsData.operations = nsData.operations || {}
@@ -45,7 +47,19 @@ function processDoc (doc, data) {
           break
         case 'service':
           _.forEach(node.childNodes, (node) => {
-            if (node.localName === 'port') nsData.ports[node.getAttribute('name')] = node
+            if (node.localName === 'port') {
+              nsData.ports[node.getAttribute('name')] = node
+              _.forEach(node.childNodes, (child) => {
+                if (child.localName === 'address') {
+                  let { prefix } = getQName(child.tagName || child.nodeName)
+                  let soapNS = child.lookupNamespaceURI(prefix)
+                  if (_.includes(_.keys(SOAP), soapNS)) {
+                    node.$address = child.getAttribute('location')
+                    node.$soapVersion = _.get(SOAP, `["${soapNS}"].version`, '1.1')
+                  }
+                }
+              })
+            }
           })
           break
       }

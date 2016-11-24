@@ -58,8 +58,8 @@ function getTypes (data, namespaces, types) {
     })
 
     // process extension
-    let extension = _.get(type.getElementsByTagNameNS(XS_NS, 'extension'), '[0]')
-    if (_.has(extension, 'getAttribute')) {
+    let extension = _.get(type.getElementsByTagNameNS(XS_NS, 'extension'), '[0]', {})
+    if (_.isFunction(extension.getAttribute)) {
       base = parseRef(namespaces, extension, extension.getAttribute('base'))
     }
 
@@ -94,12 +94,13 @@ function getPorts (data, namespace, def) {
   return _.map(def.ports, (port, name) => {
     return {
       name,
+      address: port.$address,
+      soapVersion: port.$soapVersion,
       service: port.parentNode.getAttribute('name'),
-      operations: getPortOperations(data, namespace, port).sort()
+      operations: getPortOperations(data, namespace, port)
     }
   })
 }
-
 
 export default function processDef (data) {
   let [ operations, services, types ] = [ [], [], [] ]
@@ -107,7 +108,8 @@ export default function processDef (data) {
 
   // add empty array objects for each builtin type
   // to keep indexes in sync
-  _.forEach(namespaces, () => {
+  _.forEach(namespaces, (ns) => {
+    ns.isBuiltIn = true
     operations.push([])
     services.push([])
     types.push([])
@@ -117,9 +119,10 @@ export default function processDef (data) {
   _.forEach(data, (def, name) => {
     namespaces.push({
       name,
+      prefix: def.$prefix,
       ports: getPorts(data, name, def),
       services: [],
-      types: _.keys(def.types).sort()
+      types: _.keys(def.types)
     })
   })
 
@@ -158,8 +161,7 @@ export default function processDef (data) {
     }
     operations.push(ops)
   })
-  console.log('write file', new Date())
-  fs.writeFileSync('test-meta.txt', JSON.stringify({ namespaces, operations, services, types }, null, '  '))
 
+  fs.writeFileSync('test-meta.txt', JSON.stringify({ namespaces, operations, services, types }, null, '  '))
   return { namespaces, operations, services, types }
 }

@@ -12,17 +12,6 @@ export function filterEmpty(obj) {
     if (_.isArray(val) && !val.length) return true
     if (!val && val !== false) return true
   })
-  /*
-  return _.keys(obj).reduce((previous, current) => {
-    let value = obj[current]
-    if (_.isArray(value)) {
-      if (value.length) previous[current] = value
-    } else if (value) {
-      previous[current] = value
-    }
-    return previous
-  }, {})
-  */
 }
 
 export function getOperationElement (data, node) {
