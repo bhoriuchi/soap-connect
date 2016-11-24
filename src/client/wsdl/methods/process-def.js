@@ -156,8 +156,8 @@ export default function processDef (data) {
     }
     operations.push(ops)
   })
-
-  fs.writeFileSync('test-meta.txt', JSON.stringify({ namespaces, operations, services, types }, null, '  '))
+  console.log('write file', new Date())
+  fs.writeFileSync('test-meta-mini.txt', JSON.stringify({ namespaces, operations, services, types }))
 
   return { namespaces, operations, services, types }
 }
