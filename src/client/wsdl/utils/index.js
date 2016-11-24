@@ -41,12 +41,12 @@ export function parseRef(namespaces, node, ref) {
   let name = localName
   let namespace = prefix ? node.lookupNamespaceURI(prefix) : node.namespaceURI || XS_NS
   let nsIdx = _.findIndex(namespaces, { name: namespace })
-  let typeIdx = _.findIndex(_.get(namespaces, `[${nsIdx}].types`), name)
+  let typeIdx = namespaces[nsIdx].types.indexOf(localName)
 
   // if not found, look through other namespaces
   if (typeIdx === -1) {
-    _.forEach(namespaces, (namespace, idx) => {
-      typeIdx = _.findIndex(_.get(namespaces, `[${idx}].types`), name)
+    _.forEach(namespaces, (n, idx) => {
+      typeIdx = n.types.indexOf(localName)
       if (typeIdx !== -1) {
         nsIdx = idx
         return false
