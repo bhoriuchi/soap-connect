@@ -37,7 +37,8 @@ export default function createTypes (wsdl) {
     if (namespace.prefix) prefix = namespace.prefix
     else nsCount++
     _.forEach(namespace.types, (type, typeIdx) => {
-      _.set(types, `["${prefix}"]["${type}"]`, (data) => {
+      _.set(types, `["${prefix}"]["${type}"]`, (data, context = {}) => {
+        let { parentType, parentNS } = context
         let obj = {}
         let type = wsdl.getType([nsIdx, typeIdx])
         let base = type.base
@@ -63,11 +64,15 @@ export default function createTypes (wsdl) {
               if (wsdl.isMany(el)) {
                 if (_.isArray(val)) {
                   obj[el.name] = _.map(val, (v) => {
-                    return isSimple ? wsdl.convertValue(el.type, v) : types[typePrefix][typeName](v)
+                    return isSimple ? wsdl.convertValue(el.type, v) : types[typePrefix][typeName](v, {
+                      parentType: [typePrefix, typeName].join(':')
+                    })
                   })
                 }
               } else {
-                obj[el.name] = isSimple ? wsdl.convertValue(el.type, val) : types[typePrefix][typeName](val)
+                obj[el.name] = isSimple ? wsdl.convertValue(el.type, val) : types[typePrefix][typeName](val, {
+                  parentType: [typePrefix, typeName].join(':')
+                })
               }
             }
           }
@@ -83,6 +88,7 @@ export default function createTypes (wsdl) {
             }
           }
         })
+        if (!obj['@type'] && parentType) obj['@type'] = parentType
         return obj
       })
     })
