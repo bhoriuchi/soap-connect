@@ -45,7 +45,7 @@ export default function createTypes (wsdl) {
 
         if (base) {
           if (wsdl.isBuiltInType(base)) {
-            obj.value = data.value
+            obj['#text'] = data.value
           } else {
             let baseName = wsdl.getTypeName(base)
             let basePrefix = wsdl.getNSPrefix(base)
