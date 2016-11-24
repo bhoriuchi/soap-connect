@@ -10,6 +10,12 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
           type: 'VirtualMachine',
           value: 'vm-101'
         }
+      },
+      {
+        obj: {
+          type: 'VirtualMachine',
+          value: 'vm-300'
+        }
       }
     ],
     propSet: [
@@ -21,7 +27,10 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   })
 
   // console.log(JSON.stringify(spec, null, '  '))
-  console.log(builder.create(spec).end({ pretty: true }))
+  // console.log(builder.create(spec).end({ pretty: true }))
+  client.services.VimService.VimPort.RetrievePropertiesEx(spec).then((res) => {
+    console.log(res)
+  })
   /*
   client.types.vim25.ManagedObjectReference({
     type: 'VirtualMachine',

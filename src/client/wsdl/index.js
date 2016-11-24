@@ -58,19 +58,28 @@ export class WSDL extends EventEmitter {
   }
 
   getType (t) {
-    return _.get(this.metadata, `types[${t[0]}][${t[1]}]`)
+    let [ ns, type ] = t
+    return _.get(this.metadata, `types[${ns}][${type}]`)
+  }
+
+  getOp (o) {
+    let [ ns, port, op ] = o
+    return _.get(this.metadata, `operations[${ns}][${port}][${op}]`)
   }
 
   getTypeName (t) {
-    return _.get(this.metadata, `namespaces[${t[0]}].types[${t[1]}]`)
+    let [ ns, type ] = t
+    return _.get(this.metadata, `namespaces[${ns}].types[${type}]`)
   }
 
   getNSPrefix (t) {
-    return _.get(this.metadata, `namespaces[${t[0]}].prefix`)
+    let [ ns ] = t
+    return _.get(this.metadata, `namespaces[${ns}].prefix`)
   }
 
   isBuiltInType (t) {
-    return _.get(this.metadata, `namespaces[${t[0]}].isBuiltIn`) === true
+    let [ ns ] = t
+    return _.get(this.metadata, `namespaces[${ns}].isBuiltIn`) === true
   }
 
   isEnumType (t) {
