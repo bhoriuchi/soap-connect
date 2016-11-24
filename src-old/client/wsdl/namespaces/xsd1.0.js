@@ -19,7 +19,7 @@ export default {
   QName: { isSimple: true },
   NOTATION: { isSimple: true },
   string: { isSimple: true },
-  decimal: { isSimple: true },
+  deciman: { isSimple: true },
   normalizedString: { isSimple: true },
   integer: { isSimple: true },
   token: { isSimple: true },
