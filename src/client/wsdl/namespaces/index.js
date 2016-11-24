@@ -11,7 +11,7 @@ export function getBuiltinNSMeta () {
       name,
       operations: [],
       services: [],
-      types: _.keys(ns).sort()
+      types: _.keys(ns)
     }
   })
 }

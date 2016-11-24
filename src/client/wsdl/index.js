@@ -61,8 +61,40 @@ export class WSDL extends EventEmitter {
     return _.get(this.metadata, `types[${t[0]}][${t[1]}]`)
   }
 
+  getTypeName (t) {
+    return _.get(this.metadata, `namespaces[${t[0]}].types[${t[1]}]`)
+  }
+
+  getNSPrefix (t) {
+    return _.get(this.metadata, `namespaces[${t[0]}].prefix`)
+  }
+
   isBuiltInType (t) {
     return _.get(this.metadata, `namespaces[${t[0]}].isBuiltIn`) === true
+  }
+
+  isEnumType (t) {
+    return _.has(this.getType(t), 'enumerations')
+  }
+
+  isSimpleType(t) {
+    return this.isBuiltInType(t) || this.isEnumType(t)
+  }
+
+  isMany (typeDef) {
+    if (!typeDef.maxOccurs) return false
+    let maxOccurs = typeDef.maxOccurs === 'unbounded' ? 2 : Number(maxOccurs)
+    return maxOccurs > 1
+  }
+
+  isRequired (typeDef) {
+    return Number(typeDef.minOccurs) > 0
+  }
+
+  convertValue (type, value) {
+    if (this.isEnumType(type)) return value
+    let t = this.getType(type)
+    return t.convert ? t.convert(value) : value
   }
 }
 
