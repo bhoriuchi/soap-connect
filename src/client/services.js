@@ -5,7 +5,7 @@ import xmlbuilder from 'xmlbuilder'
 import serialize from './serialize'
 import deserialize from './deserialize'
 import processFault from './fault'
-import { getEndpointFromPort, getFirstChildElement, firstNode } from './utils'
+import { getEndpointFromPort, getFirstChildElement, firstNode } from './utils/index'
 import { SOAP, XS_NS, XSI_NS, XS_PREFIX, XSI_PREFIX, SOAPENV_PREFIX, SOAPENC_PREFIX } from './const'
 
 export default function createServices (wsdl) {
