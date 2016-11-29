@@ -23,15 +23,20 @@ export class SoapConnectClient extends EventEmitter {
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
-    return WSDL(wsdlAddress, options).then((wsdlInstance) => {
-      this.wsdl = wsdlInstance
-      this.types = createTypes(wsdlInstance)
-      this.services = createServices.call(this, wsdlInstance)
+    return WSDL(wsdlAddress, options)
+      .then((wsdlInstance) => {
+        this.wsdl = wsdlInstance
+        this.types = createTypes(wsdlInstance)
+        this.services = createServices.call(this, wsdlInstance)
 
-      // return the client
-      callback(this)
-      return this
-    })
+        // return the client
+        callback(null, this)
+        return this
+      })
+      .catch((err) => {
+        callback(err)
+        return Promise.reject(err)
+      })
   }
 
   setSecurity (security) {
@@ -40,6 +45,6 @@ export class SoapConnectClient extends EventEmitter {
   }
 }
 
-export default function (mainWSDL, options = {}) {
-  return new SoapConnectClient(mainWSDL, options)
+export default function (mainWSDL, options = {}, callback) {
+  return new SoapConnectClient(mainWSDL, options, callback)
 }

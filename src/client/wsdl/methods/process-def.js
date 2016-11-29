@@ -2,7 +2,6 @@ import _ from 'lodash'
 import { XS_NS, WSDL_NS } from '../../const'
 import { getBuiltinNSMeta } from '../namespaces/index'
 import { toProperty, parseRef, filterEmpty, getQName, getOperationElement } from '../../utils/index'
-import fs from 'fs'
 
 function getTypes (data, namespaces, types) {
   return _.map(types, (type) => {
@@ -161,7 +160,5 @@ export default function processDef (data) {
     }
     operations.push(ops)
   })
-
-  fs.writeFileSync('test-meta.txt', JSON.stringify({ namespaces, operations, services, types }, null, '  '))
   return { namespaces, operations, services, types }
 }

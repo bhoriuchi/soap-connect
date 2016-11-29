@@ -11,7 +11,6 @@ var path = _interopDefault(require('path'));
 var LocalStorage = _interopDefault(require('node-localstorage'));
 var xmldom = _interopDefault(require('xmldom'));
 var request = _interopDefault(require('request'));
-var fs = _interopDefault(require('fs'));
 var xmlbuilder = _interopDefault(require('xmlbuilder'));
 
 var SOAP = {
@@ -648,8 +647,6 @@ function processDef(data) {
     }
     operations.push(ops);
   });
-
-  fs.writeFileSync('test-meta.txt', JSON.stringify({ namespaces: namespaces, operations: operations, services: services, types: types }, null, '  '));
   return { namespaces: namespaces, operations: operations, services: services, types: types };
 }
 
@@ -1399,8 +1396,11 @@ var SoapConnectClient = function (_EventEmitter) {
       _this.services = createServices.call(_this, wsdlInstance);
 
       // return the client
-      callback(_this);
+      callback(null, _this);
       return _this;
+    }).catch(function (err) {
+      callback(err);
+      return Promise.reject(err);
     }), possibleConstructorReturn(_this, _ret);
   }
 
@@ -1416,8 +1416,9 @@ var SoapConnectClient = function (_EventEmitter) {
 
 function createClient (mainWSDL) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var callback = arguments[2];
 
-  return new SoapConnectClient(mainWSDL, options);
+  return new SoapConnectClient(mainWSDL, options, callback);
 }
 
 var index = {

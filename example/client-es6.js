@@ -1,37 +1,10 @@
 import soap from '../src/index'
 import cred from '../credentials'
-// import builder from 'xmlbuilder'
 
 let ts = Date.now()
 
-soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
-  client.on('request', (r) => {
-    console.log(r.body)
-  })
-  /*
-  let spec = client.types.vim25.PropertyFilterSpec({
-    objectSet: [
-      {
-        obj: {
-          type: 'VirtualMachine',
-          value: 'vm-101'
-        }
-      },
-      {
-        obj: {
-          type: 'VirtualMachine',
-          value: 'vm-300'
-        }
-      }
-    ],
-    propSet: [
-      {
-        pathSet: ['name'],
-        type: 'VirtualMachine'
-      }
-    ]
-  })
-  */
+soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }, (err, client) => {
+  if (err) return console.error(err)
 
   let VimPort = client.services.VimService.VimPort
 
@@ -41,51 +14,9 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
       value: 'ServiceInstance'
     }
   })
-
-  // console.log(JSON.stringify(spec, null, '  '))
-  // console.log(builder.create(spec).end({ pretty: true }))
-  /*
-  client.services.VimService.VimPort.RetrievePropertiesEx({
-    _this: {
-      type: '',
-      value: ''
-    },
-    specSet: [
-      {
-        objectSet: [
-          {
-            obj: {
-              type: 'VirtualMachine',
-              value: 'vm-101'
-            }
-          },
-          {
-            obj: {
-              type: 'VirtualMachine',
-              value: 'vm-300'
-            }
-          }
-        ],
-        propSet: [
-          {
-            pathSet: ['name'],
-            type: 'VirtualMachine'
-          }
-        ]
-      }
-    ],
-    options: {}
-  })
-    */
-
-    .then((res) => {
+    .then((sc) => {
       console.log('Run Time:', (Date.now() - ts) / 1000, 'seconds')
-      console.log(res)
+      console.log(JSON.stringify(sc, null, '  '))
     })
-  /*
-  client.types.vim25.ManagedObjectReference({
-    type: 'VirtualMachine',
-    value: 'vm-101'
-  })
-  */
+    .catch(console.error)
 })
