@@ -16,14 +16,20 @@ let start = Date.now()
 
 soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   let vim = client.services.VimService.VimPort
+
+  /*
   client.on('soap.request', (r) => {
     console.log(chalk.blue(r.body))
   })
+  */
 
+  /*
   client.on('soap.response', (r) => {
     console.log(chalk.green(r.body))
   })
+  */
 
+  /*
   client.on('soap.error', (r) => {
     console.log(chalk.red(r.error))
   })
@@ -31,6 +37,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   client.on('soap.fault', (r) => {
     console.log(chalk.red(r.body))
   })
+  */
+
 
   return vim.RetrieveServiceContent({
     _this: {
@@ -75,7 +83,6 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
                     ],
                     propSet: [
                       {
-                        all: false,
                         pathSet: ['name'],
                         type: 'VirtualMachine'
                       }
@@ -87,11 +94,11 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
 
               // console.log(JSON.stringify(client.types.vim25.RetrievePropertiesEx(allVMs), null, '  '))
 
-              console.log(allVMs)
+              // console.log(allVMs)
 
               return vim.RetrievePropertiesEx(allVMs)
                 .then((vms) => {
-                  console.log(vms)
+                  console.log(JSON.stringify(vms, null, '  '))
                   return vms
                 })
             })

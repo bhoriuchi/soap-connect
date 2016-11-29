@@ -19,7 +19,7 @@ export default function deserialize (wsdl, type, node) {
     if (firstElem) {
       let elemType = wsdl.getType(type)
 
-      if (wsdl.isMany(el.type)) {
+      if (wsdl.isMany(el)) {
         obj[name] = _.map(elems, (node) => {
           return isSimple ? wsdl.convertValue(el.type, getNodeData(node)) : deserialize(wsdl, elemType, node)
         })
