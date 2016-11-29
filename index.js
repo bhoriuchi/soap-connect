@@ -1420,19 +1420,6 @@ function createClient (mainWSDL) {
   return new SoapConnectClient(mainWSDL, options);
 }
 
-/*
-
- <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
- <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
- <soap:Header/>
- <soap:Body>
- <ns1:RetrieveServiceContent xmlns:ns1="urn:vim25">
- <ns1:_this>ServiceInstance</ns1:_this>
- </ns1:RetrieveServiceContent>
- </soap:Body>
- </soap:Envelope>
- */
-
 var index = {
   createClient: createClient,
   Security: Security

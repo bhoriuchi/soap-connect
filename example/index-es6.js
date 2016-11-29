@@ -1,5 +1,5 @@
 import cred from '../credentials'
-import soap from '../src/index'
+import soap from '../index'
 import _ from 'lodash'
 import fs from 'fs'
 import chalk from 'chalk'
