@@ -3,8 +3,8 @@ import url from 'url'
 import EventEmitter from 'events'
 import WSDL from './wsdl/index'
 import Security from '../security/index'
-import createTypes from './create-types'
-import createServices from './create-services'
+import createTypes from './types'
+import createServices from './services'
 
 export class SoapConnectClient extends EventEmitter {
   constructor (wsdlAddress, options, callback) {
@@ -26,7 +26,7 @@ export class SoapConnectClient extends EventEmitter {
     return WSDL(wsdlAddress, options).then((wsdlInstance) => {
       this.wsdl = wsdlInstance
       this.types = createTypes(wsdlInstance)
-      this.services = createServices(wsdlInstance, this.types)
+      this.services = createServices.call(this, wsdlInstance)
 
       // return the client
       callback(this)

@@ -62,6 +62,22 @@ export class WSDL extends EventEmitter {
     return _.get(this.metadata, `types[${ns}][${type}]`)
   }
 
+  getTypeByLocalNS (nsURI, localName) {
+    let nsIdx = _.findIndex(this.metadata.namespaces, { name: nsURI })
+    let ns = _.get(this.metadata.namespaces, `[${nsIdx}]`)
+    let typeIdx = ns.types.indexOf(localName)
+    return this.getType([ nsIdx, typeIdx ])
+  }
+
+  getTypeAttribute (node) {
+    for (let key in node.attributes) {
+      let n = node.attributes[key]
+      if (n.localName === 'type') {
+        return n
+      }
+    }
+  }
+
   getOp (o) {
     let [ ns, port, op ] = o
     return _.get(this.metadata, `operations[${ns}][${port}][${op}]`)
@@ -75,6 +91,10 @@ export class WSDL extends EventEmitter {
   getNSPrefix (t) {
     let [ ns ] = t
     return _.get(this.metadata, `namespaces[${ns}].prefix`)
+  }
+
+  getNSURIByPrefix (prefix) {
+    return _.get(_.find(this.metadata.namespaces, { prefix }), 'name')
   }
 
   isBuiltInType (t) {

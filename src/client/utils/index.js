@@ -1,10 +1,16 @@
 import _ from 'lodash'
-import { XS_NS, WSDL_NS } from '../../const'
+import url from 'url'
+import { XS_NS, WSDL_NS, NODE_TYPES } from '../const'
+let { ELEMENT_NODE } = NODE_TYPES
 
 export function getQName (qname, pfx = '') {
   let [ prefix, localName ] = qname.split(':')
   if (localName) return { [`${pfx}prefix`]: prefix, [`${pfx}localName`]: localName }
   return { [`${pfx}prefix`]: '', [`${pfx}localName`]: prefix }
+}
+
+export function firstNode (nodes) {
+  return _.get(nodes, '0')
 }
 
 export function filterEmpty(obj) {
@@ -67,8 +73,31 @@ export function toProperty(namespaces, node, data) {
   return obj
 }
 
+export function getNodeData (node) {
+  return _.get(node, 'firstChild.data') || _.get(node, 'firstChild.nodeValue')
+}
+
+export function getEndpointFromPort (client, port) {
+  let svcURL = url.parse(port.address)
+  if (svcURL.host.match(/localhost/i)) svcURL.host = client.options.endpoint
+  return url.format(svcURL)
+}
+
+export function getFirstChildElement (node) {
+  for (let key in node.childNodes) {
+    let n = node.childNodes[key]
+    if (n.nodeType === ELEMENT_NODE) {
+      return n
+    }
+  }
+}
+
 export default {
+  getEndpointFromPort,
+  getFirstChildElement,
+  getNodeData,
   getOperationElement,
+  firstNode,
   filterEmpty,
   parseRef,
   toProperty,

@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import { getQName } from '../utils/index'
+import { getQName } from '../../utils/index'
 import { XS_NS, WSDL_NS, SOAP } from '../../const'
 
 // set operations via interface or portType

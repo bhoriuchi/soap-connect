@@ -8,7 +8,6 @@ export default function loadDoc (uri, cache) {
   if (!_.has(cache, uri)) {
     cache[uri] = {}
     let baseURI = `${uri.substring(0, uri.lastIndexOf('/'))}/`
-    console.log('loading', uri)
     this.emit('wsdl.load.start', uri)
 
     request(uri, (err, res, body) => {

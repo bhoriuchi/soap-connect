@@ -2,6 +2,7 @@ import cred from '../credentials'
 import soap from '../src/index'
 import _ from 'lodash'
 import fs from 'fs'
+import chalk from 'chalk'
 
 let testSvcs = {
   // wsdl: 'http://www.webservicex.net/CurrencyConvertor.asmx?WSDL'
@@ -15,12 +16,26 @@ let start = Date.now()
 
 soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   let vim = client.services.VimService.VimPort
+  client.on('soap.request', (r) => {
+    console.log(chalk.blue(r.body))
+  })
 
+  client.on('soap.response', (r) => {
+    console.log(chalk.green(r.body))
+  })
+
+  client.on('soap.error', (r) => {
+    console.log(chalk.red(r.error))
+  })
+
+  client.on('soap.fault', (r) => {
+    console.log(chalk.red(r.body))
+  })
 
   return vim.RetrieveServiceContent({
     _this: {
-      $attributes: { type: 'ServiceInstance' },
-      $value: 'ServiceInstance'
+      type: 'ServiceInstance',
+      value: 'ServiceInstance'
     }
   })
     .then((si) => {
@@ -72,6 +87,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
 
               // console.log(JSON.stringify(client.types.vim25.RetrievePropertiesEx(allVMs), null, '  '))
 
+              console.log(allVMs)
+
               return vim.RetrievePropertiesEx(allVMs)
                 .then((vms) => {
                   console.log(vms)
@@ -92,7 +109,5 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
 })
 .catch((err) => {
   // console.error('err', err)
-  console.error(err.faultString)
-  console.error('====================')
-  console.error(err.requestBody.replace(/(>)\s*(<)(\/*)/g, '$1\r\n$2$3'))
+  console.error('error', err)
 })

@@ -1,7 +1,7 @@
 import _ from 'lodash'
 import { XS_NS, WSDL_NS } from '../../const'
 import { getBuiltinNSMeta } from '../namespaces/index'
-import { toProperty, parseRef, filterEmpty, getQName, getOperationElement } from '../utils/index'
+import { toProperty, parseRef, filterEmpty, getQName, getOperationElement } from '../../utils/index'
 import fs from 'fs'
 
 function getTypes (data, namespaces, types) {
