@@ -71,17 +71,20 @@ export default function createServices (wsdl) {
               }
               this.lastResponse = res
               let doc = new xmldom.DOMParser().parseFromString(body)
+              let soapEnvelope = firstNode(doc.getElementsByTagNameNS(soapVars.envelope, 'Envelope'))
               let soapBody = firstNode(doc.getElementsByTagNameNS(soapVars.envelope, 'Body'))
               let soapFault = firstNode(soapBody.getElementsByTagNameNS(soapVars.envelope, 'Fault'))
+              let xsiPrefix = _.findKey(soapEnvelope._nsMap, (nsuri) => nsuri === XSI_NS)
+              let context = { xsiPrefix }
 
               if (soapFault) {
-                let fault = processFault(wsdl, soapFault)
+                let fault = processFault(wsdl, soapFault, context)
                 this.emit('soap.fault', { fault, res, body })
                 callback(fault)
                 return reject(fault)
               }
 
-              let result = deserialize(wsdl, outputType, getFirstChildElement(soapBody))
+              let result = deserialize(wsdl, outputType, getFirstChildElement(soapBody), context)
               this.emit('soap.response', { res, body })
               callback(null, result)
               return resolve(result)

@@ -1,5 +1,5 @@
 import cred from '../credentials'
-import soap from '../index'
+import soap from '../src/index'
 import _ from 'lodash'
 import fs from 'fs'
 import chalk from 'chalk'
@@ -23,11 +23,9 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   })
   */
 
-  /*
   client.on('soap.response', (r) => {
     console.log(chalk.green(r.body))
   })
-  */
 
   /*
   client.on('soap.error', (r) => {
@@ -57,6 +55,32 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
         .then((session) => {
           client.setSecurity(soap.Security.CookieSecurity(client.lastResponse.headers))
 
+          return vim.RetrievePropertiesEx({
+            _this: sc.propertyCollector,
+            specSet: [
+              {
+                propSet: [
+                  {
+                    type: 'SessionManager',
+                    pathSet: ['sessionList']
+                  }
+                ],
+                objectSet: [
+                  {
+                    obj: {
+                      type: 'SessionManager',
+                      value: 'SessionManager'
+                    }
+                  }
+                ]
+              }
+            ],
+            options: {}
+          })
+            .then((sessions) => {
+              console.log(JSON.stringify(sessions, null, '  '))
+            })
+          /*
           return vim.CreateContainerView({
             _this: sc.viewManager,
             container: sc.rootFolder,
@@ -102,6 +126,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
                   return vms
                 })
             })
+            */
+
         })
         .then(() => {
           return vim.Logout({
