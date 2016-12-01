@@ -1239,17 +1239,22 @@ function deserialize(wsdl, type, node) {
   var context = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
   if (!node.textContent) return undefined;
-  var xsiPrefix = context.xsiPrefix;
+  var xsiPrefix = context.xsiPrefix,
+      ignoreXSI = context.ignoreXSI;
 
   var xsiType = node.getAttribute(xsiPrefix + ':type');
-  type = xsiType ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type;
+  type = xsiType && !ignoreXSI ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type;
 
   var typeDef = wsdl.getType(type);
   var typeIsMany = wsdl.isMany(typeDef);
   var obj = typeIsMany ? [] : {};
 
-  if (typeDef.base && wsdl.isBuiltInType(wsdl.getTypeRoot(typeDef.base))) {
-    obj = { value: wsdl.convertValue(typeDef.base, node.textContent) };
+  if (typeDef.base) {
+    if (wsdl.isBuiltInType(typeDef.base)) {
+      obj = { value: wsdl.convertValue(typeDef.base, node.textContent) };
+    } else {
+      obj = deserialize(wsdl, typeDef.base, node, _.merge(context, { ignoreXSI: true }));
+    }
   }
 
   if (wsdl.isSimpleType(type)) return wsdl.convertValue(type, node.textContent);
@@ -1260,7 +1265,7 @@ function deserialize(wsdl, type, node) {
 
     _.forEach(node.childNodes, function (node) {
       if (node.localName === el.name) {
-        var o = deserialize(wsdl, el.type, node, context);
+        var o = deserialize(wsdl, el.type, node, _.merge(context, { ignoreXSI: false }));
         if (o !== undefined) {
           if (isMany) {
             if (typeIsMany) obj.push(o);else obj[el.name].push(o);

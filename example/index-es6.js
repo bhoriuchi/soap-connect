@@ -14,6 +14,29 @@ let testSvcs = {
 
 let start = Date.now()
 
+let specSet = [
+  {
+    "objectSet": [
+      {
+        "obj": {
+          "type": "VirtualMachine",
+          "value": "vm-16"
+        }
+      }
+    ],
+    "propSet": [
+      {
+        "all": false,
+        "pathSet": [
+          "config.hardware.device",
+          "name"
+        ],
+        "type": "VirtualMachine"
+      }
+    ]
+  }
+]
+
 soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
   let vim = client.services.VimService.VimPort
 
@@ -23,11 +46,9 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   })
   */
 
-  /*
   client.on('soap.response', (r) => {
     console.log(chalk.green(r.body))
   })
-  */
 
   /*
   client.on('soap.error', (r) => {
@@ -49,6 +70,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
     .then((si) => {
       let sc = si.returnval
 
+      console.log(JSON.stringify(sc, null, '  '))
+
       return vim.Login({
         _this: sc.sessionManager,
         userName: cred.username,
@@ -56,7 +79,14 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
       })
         .then((session) => {
           client.setSecurity(soap.Security.CookieSecurity(client.lastResponse.headers))
-
+          return vim.RetrievePropertiesEx({
+            _this: sc.propertyCollector,
+            specSet,
+            options: {}
+          })
+            .then((res) => {
+              console.log(JSON.stringify(res, null, '  '))
+            })
           /*
           return vim.RetrievePropertiesEx({
             _this: sc.propertyCollector,
@@ -84,7 +114,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
               console.log(JSON.stringify(sessions, null, '  '))
             })
 */
-
+/*
           return vim.CreateContainerView({
             _this: sc.viewManager,
             container: sc.rootFolder,
@@ -126,7 +156,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
                   return vms
                 })
             })
-
+*/
 
         })
         .then(() => {

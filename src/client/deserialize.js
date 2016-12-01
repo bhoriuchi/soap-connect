@@ -2,16 +2,20 @@ import _ from 'lodash'
 
 export default function deserialize (wsdl, type, node, context = {}) {
   if (!node.textContent) return undefined
-  let { xsiPrefix } = context
+  let { xsiPrefix, ignoreXSI } = context
   let xsiType = node.getAttribute(`${xsiPrefix}:type`)
-  type = xsiType ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type
+  type = xsiType && !ignoreXSI ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type
 
   let typeDef = wsdl.getType(type)
   let typeIsMany = wsdl.isMany(typeDef)
   let obj = typeIsMany ? [] : {}
 
-  if (typeDef.base && wsdl.isBuiltInType(wsdl.getTypeRoot(typeDef.base))) {
-    obj = { value: wsdl.convertValue(typeDef.base, node.textContent) }
+  if (typeDef.base) {
+    if (wsdl.isBuiltInType(typeDef.base)) {
+      obj = { value: wsdl.convertValue(typeDef.base, node.textContent) }
+    } else {
+      obj = deserialize(wsdl, typeDef.base, node, _.merge(context, { ignoreXSI: true }))
+    }
   }
 
   if (wsdl.isSimpleType(type)) return wsdl.convertValue(type, node.textContent)
@@ -22,7 +26,7 @@ export default function deserialize (wsdl, type, node, context = {}) {
 
     _.forEach(node.childNodes, (node) => {
       if (node.localName === el.name) {
-        let o = deserialize(wsdl, el.type, node, context)
+        let o = deserialize(wsdl, el.type, node, _.merge(context, { ignoreXSI: false }))
         if (o !== undefined) {
           if (isMany) {
             if (typeIsMany) obj.push(o)
