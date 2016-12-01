@@ -1,12 +1,19 @@
 let any = (obj) => obj
+let toDate = (obj) => {
+  try {
+    return new Date(obj)
+  } catch (err) {
+    return obj
+  }
+}
 
 export default {
   anyType: { convert: any },
   anySimpleType: { convert: any },
   duration: { convert: String },
-  dateTime: { convert: String },
+  dateTime: { convert: toDate },
   time: { convert: String },
-  date: { convert: String },
+  date: { convert: toDate },
   gYearMonth: { convert: String },
   gYear: { convert: String },
   gMonthDay: { convert: String },

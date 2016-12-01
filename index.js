@@ -82,14 +82,21 @@ function loadDoc(uri, cache) {
 var any = function any(obj) {
   return obj;
 };
+var toDate = function toDate(obj) {
+  try {
+    return new Date(obj);
+  } catch (err) {
+    return obj;
+  }
+};
 
 var xsd1_0 = {
   anyType: { convert: any },
   anySimpleType: { convert: any },
   duration: { convert: String },
-  dateTime: { convert: String },
+  dateTime: { convert: toDate },
   time: { convert: String },
-  date: { convert: String },
+  date: { convert: toDate },
   gYearMonth: { convert: String },
   gYear: { convert: String },
   gMonthDay: { convert: String },
