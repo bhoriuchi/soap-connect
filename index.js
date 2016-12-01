@@ -1276,8 +1276,9 @@ function processFault(wsdl, fault, context) {
 
   return {
     faultCode: faultCode,
-    faultString: faultString,
-    fault: deserialize(wsdl, faultType, faultNode, context)
+    message: faultString,
+    type: faultTypeName,
+    detail: deserialize(wsdl, faultType, faultNode, context)
   };
 }
 

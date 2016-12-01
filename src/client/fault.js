@@ -11,7 +11,8 @@ export default function processFault (wsdl, fault, context) {
 
   return {
     faultCode,
-    faultString,
-    fault: deserialize(wsdl, faultType, faultNode, context)
+    message: faultString,
+    type: faultTypeName,
+    detail: deserialize(wsdl, faultType, faultNode, context)
   }
 }
