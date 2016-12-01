@@ -4,7 +4,7 @@ export default function deserialize (wsdl, type, node, context = {}) {
   if (!node.textContent) return undefined
   let { xsiPrefix } = context
   let xsiType = node.getAttribute(`${xsiPrefix}:type`)
-  type = xsiType ? wsdl.getTypeByLocalNS(node.namespaceURI, xsiType) : type
+  type = xsiType ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type
 
   let typeDef = wsdl.getType(type)
   let typeIsMany = wsdl.isMany(typeDef)

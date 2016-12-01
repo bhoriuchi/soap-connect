@@ -57,6 +57,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
         .then((session) => {
           client.setSecurity(soap.Security.CookieSecurity(client.lastResponse.headers))
 
+          /*
           return vim.RetrievePropertiesEx({
             _this: sc.propertyCollector,
             specSet: [
@@ -82,8 +83,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
             .then((sessions) => {
               console.log(JSON.stringify(sessions, null, '  '))
             })
+*/
 
-          /*
           return vim.CreateContainerView({
             _this: sc.viewManager,
             container: sc.rootFolder,
@@ -119,17 +120,13 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
                 options: {}
               }
 
-              // console.log(JSON.stringify(client.types.vim25.RetrievePropertiesEx(allVMs), null, '  '))
-
-              // console.log(allVMs)
-
               return vim.RetrievePropertiesEx(allVMs)
                 .then((vms) => {
                   console.log(JSON.stringify(vms, null, '  '))
                   return vms
                 })
             })
-            */
+
 
         })
         .then(() => {

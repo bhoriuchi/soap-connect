@@ -917,6 +917,16 @@ var WSDL = function (_EventEmitter) {
       return _.get(_.find(this.metadata.namespaces, { prefix: prefix }), 'name');
     }
   }, {
+    key: 'getTypeByQName',
+    value: function getTypeByQName(qname, fallbackNSURI) {
+      var _getQName = getQName(qname),
+          prefix = _getQName.prefix,
+          localName = _getQName.localName;
+
+      var nsURI = prefix ? this.getNSURIByPrefix(prefix) : fallbackNSURI;
+      return this.getTypeByLocalNS(nsURI, localName);
+    }
+  }, {
     key: 'isBuiltInType',
     value: function isBuiltInType(t) {
       var _t4 = slicedToArray(t, 1),
@@ -1232,7 +1242,7 @@ function deserialize(wsdl, type, node) {
   var xsiPrefix = context.xsiPrefix;
 
   var xsiType = node.getAttribute(xsiPrefix + ':type');
-  type = xsiType ? wsdl.getTypeByLocalNS(node.namespaceURI, xsiType) : type;
+  type = xsiType ? wsdl.getTypeByQName(xsiType, node.namespaceURI) : type;
 
   var typeDef = wsdl.getType(type);
   var typeIsMany = wsdl.isMany(typeDef);

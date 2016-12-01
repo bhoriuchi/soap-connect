@@ -3,6 +3,7 @@ import path from 'path'
 import EventEmitter from 'events'
 import LocalStorage from 'node-localstorage'
 import methods from './methods/index'
+import { getQName } from '../utils/index'
 
 /*
  * Strategy adapted from vSphere JS SDK  - https://labs.vmware.com/flings/vsphere-sdk-for-javascript#summary
@@ -100,6 +101,12 @@ export class WSDL extends EventEmitter {
 
   getNSURIByPrefix (prefix) {
     return _.get(_.find(this.metadata.namespaces, { prefix }), 'name')
+  }
+
+  getTypeByQName (qname, fallbackNSURI) {
+    let { prefix, localName } = getQName(qname)
+    let nsURI = prefix ? this.getNSURIByPrefix(prefix) : fallbackNSURI
+    return this.getTypeByLocalNS(nsURI, localName)
   }
 
   isBuiltInType (t) {
