@@ -1272,7 +1272,7 @@ function processFault(wsdl, fault, context) {
   var faultNode = getFirstChildElement(firstNode(fault.getElementsByTagName('detail')));
   var typeAttr = wsdl.getTypeAttribute(faultNode);
   var faultTypeName = typeAttr.value || typeAttr.nodeValue || faultNode.localName;
-  var faultType = wsdl.getType(wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName));
+  var faultType = wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName);
 
   return {
     faultCode: faultCode,

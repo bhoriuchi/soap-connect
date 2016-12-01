@@ -7,7 +7,7 @@ export default function processFault (wsdl, fault, context) {
   let faultNode = getFirstChildElement(firstNode(fault.getElementsByTagName('detail')))
   let typeAttr = wsdl.getTypeAttribute(faultNode)
   let faultTypeName = typeAttr.value || typeAttr.nodeValue || faultNode.localName
-  let faultType = wsdl.getType(wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName))
+  let faultType = wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName)
 
   return {
     faultCode,
