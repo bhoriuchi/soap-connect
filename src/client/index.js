@@ -6,6 +6,8 @@ import Security from '../security/index'
 import createTypes from './types'
 import createServices from './services'
 
+const VERSION = '0.1.0'
+
 export class SoapConnectClient extends EventEmitter {
   constructor (wsdlAddress, options, callback) {
     super()
@@ -17,6 +19,7 @@ export class SoapConnectClient extends EventEmitter {
     callback = _.isFunction(callback) ? callback : () => false
     options.endpoint = options.endpoint || url.parse(wsdlAddress).host
     this.options = options
+    this.options.userAgent = this.options.userAgent || `soap-connect/${VERSION}`
     this.types = {}
     this.lastResponse = null
     this._security = new Security.Security()

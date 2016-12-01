@@ -28,7 +28,6 @@ export default function createServices (wsdl) {
             let soapAction = input.action
             let opName = input.name
             let inputTypePrefix = wsdl.getNSPrefix(input.type)
-            let outputType = wsdl.getType(output.type)
 
             let { obj, nsUsed } = serialize(wsdl, input.type, data)
 
@@ -48,15 +47,17 @@ export default function createServices (wsdl) {
             body[`${inputTypePrefix}:${opName}`] = obj
             envelope[`${SOAPENV_PREFIX}:Header`] = header
             envelope[`${SOAPENV_PREFIX}:Body`] = body
+
             let inputXML = xmlbuilder.create({ [`${SOAPENV_PREFIX}:Envelope`]: envelope }).end({
               pretty: true,
-              encoding: 'UTF-8'
+              encoding: this.options.encoding || 'UTF-8'
             })
 
             let headers = {
               'Content-Type': soapVars.contentType,
               'Content-Length': inputXML.length,
-              'SOAPAction': soapAction
+              'SOAPAction': soapAction,
+              'User-Agent': this.options.userAgent
             }
             this._security.addHttpHeaders(headers)
 
@@ -84,7 +85,7 @@ export default function createServices (wsdl) {
                 return reject(fault)
               }
 
-              let result = deserialize(wsdl, outputType, getFirstChildElement(soapBody), context)
+              let result = deserialize(wsdl, output.type, getFirstChildElement(soapBody), context)
               this.emit('soap.response', { res, body })
               callback(null, result)
               return resolve(result)

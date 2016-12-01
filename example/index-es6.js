@@ -23,9 +23,11 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
   })
   */
 
+  /*
   client.on('soap.response', (r) => {
     console.log(chalk.green(r.body))
   })
+  */
 
   /*
   client.on('soap.error', (r) => {
@@ -80,6 +82,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => 
             .then((sessions) => {
               console.log(JSON.stringify(sessions, null, '  '))
             })
+
           /*
           return vim.CreateContainerView({
             _this: sc.viewManager,

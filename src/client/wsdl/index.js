@@ -88,6 +88,11 @@ export class WSDL extends EventEmitter {
     return _.get(this.metadata, `namespaces[${ns}].types[${type}]`)
   }
 
+  getTypeRoot (t) {
+    let root = this.getType(t).base
+    return root ? this.getTypeRoot(root) : t
+  }
+
   getNSPrefix (t) {
     let [ ns ] = t
     return _.get(this.metadata, `namespaces[${ns}].prefix`)

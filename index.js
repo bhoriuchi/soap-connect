@@ -859,7 +859,7 @@ var WSDL = function (_EventEmitter) {
       var nsIdx = _.findIndex(this.metadata.namespaces, { name: nsURI });
       var ns = _.get(this.metadata.namespaces, '[' + nsIdx + ']');
       var typeIdx = ns.types.indexOf(localName);
-      return this.getType([nsIdx, typeIdx]);
+      return [nsIdx, typeIdx];
     }
   }, {
     key: 'getTypeAttribute',
@@ -889,6 +889,12 @@ var WSDL = function (_EventEmitter) {
           type = _t2[1];
 
       return _.get(this.metadata, 'namespaces[' + ns + '].types[' + type + ']');
+    }
+  }, {
+    key: 'getTypeRoot',
+    value: function getTypeRoot(t) {
+      var root = this.getType(t).base;
+      return root ? this.getTypeRoot(root) : t;
     }
   }, {
     key: 'getNSPrefix',
@@ -1213,60 +1219,65 @@ function serialize(wsdl, typeCoord, data) {
 }
 
 function deserialize(wsdl, type, node) {
-  var obj = {};
+  var context = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
 
-  if (type.base) {
-    obj = !wsdl.isBuiltInType(type.base) ? deserialize(wsdl, wsdl.getType(type.base), node) : {
-      value: wsdl.convertValue(type.base, getNodeData(node))
-    };
+  if (!node.textContent) return undefined;
+  var xsiPrefix = context.xsiPrefix;
+
+  var xsiType = node.getAttribute(xsiPrefix + ':type');
+  type = xsiType ? wsdl.getTypeByLocalNS(node.namespaceURI, xsiType) : type;
+
+  var typeDef = wsdl.getType(type);
+  var typeIsMany = wsdl.isMany(typeDef);
+  var obj = typeIsMany ? [] : {};
+
+  if (typeDef.base && wsdl.isBuiltInType(wsdl.getTypeRoot(typeDef.base))) {
+    obj = { value: wsdl.convertValue(typeDef.base, node.textContent) };
   }
 
-  _.forEach(type.elements, function (el) {
-    var type = el.type,
-        name = el.name;
+  if (wsdl.isSimpleType(type)) return wsdl.convertValue(type, node.textContent);
 
-    var elems = node.getElementsByTagName(name);
-    var firstElem = firstNode(elems);
-    var isSimple = wsdl.isSimpleType(el.type);
+  _.forEach(typeDef.elements, function (el) {
+    var isMany = wsdl.isMany(el) || typeIsMany;
+    if (isMany && !typeIsMany && el.name) obj[el.name] = [];
 
-    if (firstElem) {
-      (function () {
-        var elemType = wsdl.getType(type);
-
-        if (wsdl.isMany(el)) {
-          obj[name] = _.map(elems, function (node) {
-            return isSimple ? wsdl.convertValue(el.type, getNodeData(node)) : deserialize(wsdl, elemType, node);
-          });
-        } else {
-          obj[name] = isSimple ? wsdl.convertValue(el.type, getNodeData(firstElem)) : deserialize(wsdl, elemType, firstElem);
+    _.forEach(node.childNodes, function (node) {
+      if (node.localName === el.name) {
+        var o = deserialize(wsdl, el.type, node, context);
+        if (o !== undefined) {
+          if (isMany) {
+            if (typeIsMany) obj.push(o);else obj[el.name].push(o);
+          } else {
+            obj[el.name] = o;
+          }
         }
-      })();
-    }
+      }
+    });
   });
-
-  _.forEach(type.attributes, function (attr) {
+  _.forEach(typeDef.attributes, function (attr) {
     var name = attr.name,
         type = attr.type;
 
-    var val = node.getAttribute(name);
-    if (val) obj[name] = wsdl.convertValue(type, val);
+    if (name && type) {
+      var val = node.getAttribute(name);
+      if (val) obj[name] = wsdl.convertValue(type, val);
+    }
   });
-
   return obj;
 }
 
-function processFault(wsdl, fault) {
+function processFault(wsdl, fault, context) {
   var faultCode = getNodeData(firstNode(fault.getElementsByTagName('faultcode')));
   var faultString = getNodeData(firstNode(fault.getElementsByTagName('faultstring')));
   var faultNode = getFirstChildElement(firstNode(fault.getElementsByTagName('detail')));
   var typeAttr = wsdl.getTypeAttribute(faultNode);
   var faultTypeName = typeAttr.value || typeAttr.nodeValue || faultNode.localName;
-  var faultType = wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName);
+  var faultType = wsdl.getType(wsdl.getTypeByLocalNS(faultNode.namespaceURI, faultTypeName));
 
   return {
     faultCode: faultCode,
     faultString: faultString,
-    fault: deserialize(wsdl, faultType, faultNode)
+    fault: deserialize(wsdl, faultType, faultNode, context)
   };
 }
 
@@ -1301,7 +1312,6 @@ function createServices(wsdl) {
             var soapAction = input.action;
             var opName = input.name;
             var inputTypePrefix = wsdl.getNSPrefix(input.type);
-            var outputType = wsdl.getType(output.type);
 
             var _serialize = serialize(wsdl, input.type, data),
                 obj = _serialize.obj,
@@ -1318,15 +1328,17 @@ function createServices(wsdl) {
             body[inputTypePrefix + ':' + opName] = obj;
             envelope[SOAPENV_PREFIX + ':Header'] = header;
             envelope[SOAPENV_PREFIX + ':Body'] = body;
+
             var inputXML = xmlbuilder.create(defineProperty({}, SOAPENV_PREFIX + ':Envelope', envelope)).end({
               pretty: true,
-              encoding: 'UTF-8'
+              encoding: _this.options.encoding || 'UTF-8'
             });
 
             var headers = {
               'Content-Type': soapVars.contentType,
               'Content-Length': inputXML.length,
-              'SOAPAction': soapAction
+              'SOAPAction': soapAction,
+              'User-Agent': _this.options.userAgent
             };
             _this._security.addHttpHeaders(headers);
 
@@ -1341,17 +1353,22 @@ function createServices(wsdl) {
               }
               _this.lastResponse = res;
               var doc = new xmldom.DOMParser().parseFromString(body);
+              var soapEnvelope = firstNode(doc.getElementsByTagNameNS(soapVars.envelope, 'Envelope'));
               var soapBody = firstNode(doc.getElementsByTagNameNS(soapVars.envelope, 'Body'));
               var soapFault = firstNode(soapBody.getElementsByTagNameNS(soapVars.envelope, 'Fault'));
+              var xsiPrefix = _.findKey(soapEnvelope._nsMap, function (nsuri) {
+                return nsuri === XSI_NS;
+              });
+              var context = { xsiPrefix: xsiPrefix };
 
               if (soapFault) {
-                var fault = processFault(wsdl, soapFault);
+                var fault = processFault(wsdl, soapFault, context);
                 _this.emit('soap.fault', { fault: fault, res: res, body: body });
                 callback(fault);
                 return reject(fault);
               }
 
-              var result = deserialize(wsdl, outputType, getFirstChildElement(soapBody));
+              var result = deserialize(wsdl, output.type, getFirstChildElement(soapBody), context);
               _this.emit('soap.response', { res: res, body: body });
               callback(null, result);
               return resolve(result);
@@ -1363,6 +1380,8 @@ function createServices(wsdl) {
   });
   return services;
 }
+
+var VERSION = '0.1.0';
 
 var SoapConnectClient = function (_EventEmitter) {
   inherits(SoapConnectClient, _EventEmitter);
@@ -1384,6 +1403,7 @@ var SoapConnectClient = function (_EventEmitter) {
     };
     options.endpoint = options.endpoint || url.parse(wsdlAddress).host;
     _this.options = options;
+    _this.options.userAgent = _this.options.userAgent || 'soap-connect/' + VERSION;
     _this.types = {};
     _this.lastResponse = null;
     _this._security = new Security.Security();
