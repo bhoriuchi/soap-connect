@@ -7,10 +7,10 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var _ = _interopDefault(require('lodash'));
 var url = _interopDefault(require('url'));
 var EventEmitter = _interopDefault(require('events'));
-var path = _interopDefault(require('path'));
-var LocalStorage = _interopDefault(require('node-localstorage'));
 var xmldom = _interopDefault(require('xmldom'));
 var request = _interopDefault(require('request'));
+var path = _interopDefault(require('path'));
+var LocalStorage = _interopDefault(require('node-localstorage'));
 var xmlbuilder = _interopDefault(require('xmlbuilder'));
 
 var SOAP = {
@@ -781,24 +781,63 @@ var methods = {
   processDocs: processDocs
 };
 
+var BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1');
+var STORAGE_PATH = path.resolve(BASE_DIR + '/.localStorage');
+var store = new LocalStorage.LocalStorage(STORAGE_PATH);
+
+function set$1(key, value) {
+  return store.setItem(key, value);
+}
+
+function get$1(key) {
+  return store.getItem(key);
+}
+
+function length() {
+  return store.length;
+}
+
+function remove(key) {
+  return store.removeItem(key);
+}
+
+function key(n) {
+  return store.key(n);
+}
+
+function clear() {
+  return store.clear();
+}
+
+var Store = {
+  STORAGE_PATH: STORAGE_PATH,
+  store: store,
+  set: set$1,
+  get: get$1,
+  length: length,
+  remove: remove,
+  key: key,
+  clear: clear
+};
+
 /*
  * Strategy adapted from vSphere JS SDK  - https://labs.vmware.com/flings/vsphere-sdk-for-javascript#summary
  */
-
-var BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1');
-var STORAGE_PATH = path.resolve(BASE_DIR + '/.localStorage');
 
 var WSDL = function (_EventEmitter) {
   inherits(WSDL, _EventEmitter);
 
   function WSDL(address) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
     var _ret;
 
-    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+    var cacheKey = arguments[2];
     classCallCheck(this, WSDL);
 
     var _this = possibleConstructorReturn(this, (WSDL.__proto__ || Object.getPrototypeOf(WSDL)).call(this));
 
+    _this.cacheKey = cacheKey || address;
     _this.address = address;
     _this.options = options;
     var data = {};
@@ -809,14 +848,12 @@ var WSDL = function (_EventEmitter) {
 
     return _ret = new Promise(function (resolve, reject) {
       var resolving = [],
-          store = null,
           cache = {};
 
       var useCache = _.get(_this.options, 'cache', true);
 
       if (useCache) {
-        store = new LocalStorage.LocalStorage(STORAGE_PATH);
-        var rawMetadata = store.getItem(_this.address);
+        var rawMetadata = Store.get(_this.cacheKey);
         if (rawMetadata) {
           var metadata = JSON.parse(rawMetadata);
           _this.metadata = metadata;
@@ -841,7 +878,7 @@ var WSDL = function (_EventEmitter) {
           _this.metadata = _this.processDef(data);
 
           // store the metadata
-          if (useCache && store) store.setItem(_this.address, JSON.stringify(_this.metadata));
+          if (useCache) Store.set(_this.cacheKey, JSON.stringify(_this.metadata));
 
           // resolve the WSDL object
           return resolve(_this);
@@ -969,8 +1006,9 @@ var WSDL = function (_EventEmitter) {
 
 function WSDL$1 (address) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var cacheKey = arguments[2];
 
-  return new WSDL(address, options);
+  return new WSDL(address, options, cacheKey);
 }
 
 // Strategy taken from node-soap/strong-soap
@@ -1404,6 +1442,24 @@ function createServices(wsdl) {
   return services;
 }
 
+/*
+ * The purpose of this library is to allow the developer to specify
+ * or provide a function that can be used to identify the key to store
+ * the metadata cache in localstorage
+ * when using a function, the done callback should provide the key
+ */
+var tools = {
+  lodash: _,
+  request: request,
+  xmldom: xmldom,
+  xmlbuilder: xmlbuilder
+};
+
+function cacheKey(key, wsdl, done) {
+  if (_.isString(key)) return done(null, key);else if (_.isFunction(key)) return key(tools, wsdl, done);
+  return done();
+}
+
 var VERSION = '0.1.0';
 
 var SoapConnectClient = function (_EventEmitter) {
@@ -1433,17 +1489,23 @@ var SoapConnectClient = function (_EventEmitter) {
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-    return _ret = WSDL$1(wsdlAddress, options).then(function (wsdlInstance) {
-      _this.wsdl = wsdlInstance;
-      _this.types = createTypes(wsdlInstance);
-      _this.services = createServices.call(_this, wsdlInstance);
-
-      // return the client
-      callback(null, _this);
-      return _this;
-    }).catch(function (err) {
-      callback(err);
-      return Promise.reject(err);
+    return _ret = new Promise(function (resolve, reject) {
+      return cacheKey(_this.options.cacheKey, wsdlAddress, function (err, cacheKey) {
+        if (err) {
+          callback(err);
+          return reject(err);
+        }
+        return WSDL$1(wsdlAddress, options, cacheKey).then(function (wsdlInstance) {
+          _this.wsdl = wsdlInstance;
+          _this.types = createTypes(wsdlInstance);
+          _this.services = createServices.call(_this, wsdlInstance);
+          callback(null, _this);
+          return resolve(_this);
+        }).catch(function (err) {
+          callback(err);
+          return reject(err);
+        });
+      });
     }), possibleConstructorReturn(_this, _ret);
   }
 
@@ -1466,7 +1528,8 @@ function createClient (mainWSDL) {
 
 var index = {
   createClient: createClient,
-  Security: Security
+  Security: Security,
+  Cache: Store
 };
 
 exports.SoapConnectClient = SoapConnectClient;

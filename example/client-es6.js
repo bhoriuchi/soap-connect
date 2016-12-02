@@ -1,6 +1,8 @@
 import soap from '../src/index'
 import cred from '../credentials'
 
+soap.Cache.remove('vsphere6.1')
+/*
 let ts = Date.now()
 
 soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }, (err, client) => {
@@ -20,3 +22,4 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }, (err, client) => 
     })
     .catch(console.error)
 })
+  */

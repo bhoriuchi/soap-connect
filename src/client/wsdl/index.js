@@ -1,20 +1,17 @@
 import _ from 'lodash'
-import path from 'path'
 import EventEmitter from 'events'
-import LocalStorage from 'node-localstorage'
 import methods from './methods/index'
 import { getQName } from '../utils/index'
+import Store from '../../cache/index'
 
 /*
  * Strategy adapted from vSphere JS SDK  - https://labs.vmware.com/flings/vsphere-sdk-for-javascript#summary
  */
 
-const BASE_DIR = __dirname.replace(/^(.*\/soap-connect)(.*)$/, '$1')
-const STORAGE_PATH = path.resolve(`${BASE_DIR}/.localStorage`)
-
 export class WSDL extends EventEmitter {
-  constructor (address, options = {}) {
+  constructor (address, options = {}, cacheKey) {
     super()
+    this.cacheKey = cacheKey || address
     this.address = address
     this.options = options
     let data = {}
@@ -22,12 +19,11 @@ export class WSDL extends EventEmitter {
     _.forEach(methods, (method, name) => this[name] = method.bind(this))
 
     return new Promise((resolve, reject) => {
-      let [ resolving, store, cache ] = [ [], null, {} ]
+      let [ resolving, cache ] = [ [], {} ]
       let useCache = _.get(this.options, 'cache', true)
 
       if (useCache) {
-        store = new LocalStorage.LocalStorage(STORAGE_PATH)
-        let rawMetadata = store.getItem(this.address)
+        let rawMetadata = Store.get(this.cacheKey)
         if (rawMetadata) {
           let metadata = JSON.parse(rawMetadata)
           this.metadata = metadata
@@ -48,7 +44,7 @@ export class WSDL extends EventEmitter {
           this.metadata = this.processDef(data)
 
           // store the metadata
-          if (useCache && store) store.setItem(this.address, JSON.stringify(this.metadata))
+          if (useCache) Store.set(this.cacheKey, JSON.stringify(this.metadata))
 
           // resolve the WSDL object
           return resolve(this)
@@ -139,6 +135,6 @@ export class WSDL extends EventEmitter {
   }
 }
 
-export default function (address, options = {}) {
-  return new WSDL(address, options)
+export default function (address, options = {}, cacheKey) {
+  return new WSDL(address, options, cacheKey)
 }

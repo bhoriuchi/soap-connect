@@ -5,6 +5,7 @@ import WSDL from './wsdl/index'
 import Security from '../security/index'
 import createTypes from './types'
 import createServices from './services'
+import cacheKey from './utils/cache-key'
 
 const VERSION = '0.1.0'
 
@@ -26,20 +27,26 @@ export class SoapConnectClient extends EventEmitter {
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 
-    return WSDL(wsdlAddress, options)
-      .then((wsdlInstance) => {
-        this.wsdl = wsdlInstance
-        this.types = createTypes(wsdlInstance)
-        this.services = createServices.call(this, wsdlInstance)
-
-        // return the client
-        callback(null, this)
-        return this
+    return new Promise((resolve, reject) => {
+      return cacheKey(this.options.cacheKey, wsdlAddress, (err, cacheKey) => {
+        if (err) {
+          callback(err)
+          return reject(err)
+        }
+        return WSDL(wsdlAddress, options, cacheKey)
+          .then((wsdlInstance) => {
+            this.wsdl = wsdlInstance
+            this.types = createTypes(wsdlInstance)
+            this.services = createServices.call(this, wsdlInstance)
+            callback(null, this)
+            return resolve(this)
+          })
+          .catch((err) => {
+            callback(err)
+            return reject(err)
+          })
       })
-      .catch((err) => {
-        callback(err)
-        return Promise.reject(err)
-      })
+    })
   }
 
   setSecurity (security) {

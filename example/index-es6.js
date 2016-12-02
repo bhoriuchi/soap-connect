@@ -37,7 +37,11 @@ let specSet = [
   }
 ]
 
-soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true }).then((client) => {
+let cacheKey = function (tools, wsdl, done) {
+  done(null, 'vsphere6.1')
+}
+
+soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true, cacheKey }).then((client) => {
   let vim = client.services.VimService.VimPort
 
   /*
