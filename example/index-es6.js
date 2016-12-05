@@ -83,6 +83,8 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true, cacheKey }).then((c
       })
         .then((session) => {
           client.setSecurity(soap.Security.CookieSecurity(client.lastResponse.headers))
+
+          /*
           return vim.RetrievePropertiesEx({
             _this: sc.propertyCollector,
             specSet,
@@ -91,6 +93,7 @@ soap.createClient(cred.wsdl, { ignoreSSL: true, cache: true, cacheKey }).then((c
             .then((res) => {
               console.log(JSON.stringify(res, null, '  '))
             })
+            */
           /*
           return vim.RetrievePropertiesEx({
             _this: sc.propertyCollector,
