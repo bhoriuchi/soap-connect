@@ -16,14 +16,9 @@ export default function createServices (wsdl) {
       let soapVars = _.find(SOAP, { version: port.soapVersion })
       _.forEach(port.operations, (opName, opIdx) => {
         let opPath = `["${port.service}"]["${port.name}"]["${opName}"]`
-        _.set(services, opPath, (data, options, callback) => {
-          if (_.isFunction(options)) {
-            callback = options
-            options = {}
-          }
-          callback = _.isFunction(callback) ? callback : () => false
-
+        _.set(services, opPath, (data, options) => {
           return new Promise((resolve, reject) => {
+            options = _.isObject(options) ? options : {}
             let endpoint = getEndpointFromPort(this, port)
             let [ input, output ] = wsdl.getOp([nsIdx, portIdx, opIdx])
             let soapAction = input.action
@@ -68,7 +63,6 @@ export default function createServices (wsdl) {
               if (error) {
                 let errResponse = { error, res, body }
                 this.emit('soap.error', errResponse)
-                callback(errResponse)
                 return reject(errResponse)
               }
               this.lastResponse = res
@@ -82,13 +76,11 @@ export default function createServices (wsdl) {
               if (soapFault) {
                 let fault = processFault(wsdl, soapFault, context)
                 this.emit('soap.fault', { fault, res, body })
-                callback(fault)
                 return reject(fault)
               }
 
               let result = deserialize(wsdl, output.type, getFirstChildElement(soapBody), context)
               this.emit('soap.response', { res, body })
-              callback(null, result)
               return resolve(result)
             })
           })

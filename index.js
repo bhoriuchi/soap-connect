@@ -1283,18 +1283,11 @@ function createServices(wsdl) {
       var soapVars = _.find(SOAP, { version: port.soapVersion });
       _.forEach(port.operations, function (opName, opIdx) {
         var opPath = '["' + port.service + '"]["' + port.name + '"]["' + opName + '"]';
-        _.set(services, opPath, function (data, options, callback) {
-          if (_.isFunction(options)) {
-            callback = options;
-            options = {};
-          }
-          callback = _.isFunction(callback) ? callback : function () {
-            return false;
-          };
-
+        _.set(services, opPath, function (data, options) {
           return new Promise$1(function (resolve, reject) {
             var _envelope;
 
+            options = _.isObject(options) ? options : {};
             var endpoint = getEndpointFromPort(_this, port);
 
             var _wsdl$getOp = wsdl.getOp([nsIdx, portIdx, opIdx]),
@@ -1341,7 +1334,6 @@ function createServices(wsdl) {
               if (error) {
                 var errResponse = { error: error, res: res, body: body };
                 _this.emit('soap.error', errResponse);
-                callback(errResponse);
                 return reject(errResponse);
               }
               _this.lastResponse = res;
@@ -1357,13 +1349,11 @@ function createServices(wsdl) {
               if (soapFault) {
                 var fault = processFault(wsdl, soapFault, context);
                 _this.emit('soap.fault', { fault: fault, res: res, body: body });
-                callback(fault);
                 return reject(fault);
               }
 
               var result = deserialize(wsdl, output.type, getFirstChildElement(soapBody), context);
               _this.emit('soap.response', { res: res, body: body });
-              callback(null, result);
               return resolve(result);
             });
           });
@@ -1397,7 +1387,7 @@ var VERSION = '0.1.0';
 var SoapConnectClient = function (_EventEmitter) {
   inherits(SoapConnectClient, _EventEmitter);
 
-  function SoapConnectClient(wsdlAddress, options, callback) {
+  function SoapConnectClient(wsdlAddress, options) {
     var _ret;
 
     classCallCheck(this, SoapConnectClient);
@@ -1405,13 +1395,8 @@ var SoapConnectClient = function (_EventEmitter) {
     var _this = possibleConstructorReturn(this, (SoapConnectClient.__proto__ || Object.getPrototypeOf(SoapConnectClient)).call(this));
 
     if (!_.isString(wsdlAddress)) throw new Error('No WSDL provided');
-    if (_.isFunction(options)) {
-      callback = options;
-      options = {};
-    }
-    callback = _.isFunction(callback) ? callback : function () {
-      return false;
-    };
+    options = _.isObject(options) ? options : {};
+
     options.endpoint = options.endpoint || url.parse(wsdlAddress).host;
     _this.options = options;
     _this.options.userAgent = _this.options.userAgent || 'soap-connect/' + VERSION;
@@ -1422,21 +1407,15 @@ var SoapConnectClient = function (_EventEmitter) {
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     return _ret = new Promise$1(function (resolve, reject) {
-      return cacheKey(_this.options.cacheKey, wsdlAddress, function (err, cacheKey$$1) {
-        if (err) {
-          callback(err);
-          return reject(err);
-        }
+      return cacheKey(_this.options.cacheKey, wsdlAddress, function (error, cacheKey$$1) {
+        if (error) return reject(error);
+
         return WSDL$1(wsdlAddress, options, cacheKey$$1).then(function (wsdlInstance) {
           _this.wsdl = wsdlInstance;
           _this.types = createTypes(wsdlInstance);
           _this.services = createServices.call(_this, wsdlInstance);
-          callback(null, _this);
           return resolve(_this);
-        }).catch(function (err) {
-          callback(err);
-          return reject(err);
-        });
+        }, reject);
       });
     }), possibleConstructorReturn(_this, _ret);
   }
