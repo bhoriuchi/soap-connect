@@ -2,6 +2,7 @@ import _ from 'lodash'
 import EventEmitter from 'events'
 import methods from './methods/index'
 import { getQName } from '../utils/index'
+import Promise from 'bluebird'
 import Store from '../../cache/index'
 
 /*

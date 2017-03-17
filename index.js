@@ -5,6 +5,7 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var _ = _interopDefault(require('lodash'));
 var url = _interopDefault(require('url'));
 var EventEmitter = _interopDefault(require('events'));
+var Promise$1 = _interopDefault(require('bluebird'));
 var fs = _interopDefault(require('fs'));
 var path = _interopDefault(require('path'));
 var xmldom = _interopDefault(require('xmldom'));
@@ -777,7 +778,7 @@ var WSDL = function (_EventEmitter) {
       return _this[name] = method.bind(_this);
     });
 
-    return _ret = new Promise(function (resolve, reject) {
+    return _ret = new Promise$1(function (resolve, reject) {
       var resolving = [],
           cache = {};
 
@@ -1291,7 +1292,7 @@ function createServices(wsdl) {
             return false;
           };
 
-          return new Promise(function (resolve, reject) {
+          return new Promise$1(function (resolve, reject) {
             var _envelope;
 
             var endpoint = getEndpointFromPort(_this, port);
@@ -1420,7 +1421,7 @@ var SoapConnectClient = function (_EventEmitter) {
 
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-    return _ret = new Promise(function (resolve, reject) {
+    return _ret = new Promise$1(function (resolve, reject) {
       return cacheKey(_this.options.cacheKey, wsdlAddress, function (err, cacheKey$$1) {
         if (err) {
           callback(err);

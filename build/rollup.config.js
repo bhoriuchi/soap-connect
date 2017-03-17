@@ -5,5 +5,16 @@ export default {
   format: 'cjs',
   plugins: [ babel() ],
   dest: 'index.js',
-  external: ['lodash', 'url', 'events', 'fs', 'path', 'xmldom', 'request', 'node-localstorage', 'xmlbuilder']
+  external: [
+    'lodash',
+    'url',
+    'events',
+    'fs',
+    'path',
+    'xmldom',
+    'request',
+    'node-localstorage',
+    'xmlbuilder',
+    'bluebird'
+  ]
 }

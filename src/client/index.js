@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import url from 'url'
 import EventEmitter from 'events'
+import Promise from 'bluebird'
 import WSDL from './wsdl/index'
 import Security from '../security/index'
 import createTypes from './types'
