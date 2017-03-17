@@ -8,7 +8,9 @@
     "url": "git+https://github.com/bhoriuchi/soap-connect.git"
   },
   "keywords": [
-    "soap", "client", "wsdl"
+    "soap",
+    "client",
+    "wsdl"
   ],
   "author": "Branden Horiuchi <bhoriuchi@gmail.com>",
   "license": "MIT",
@@ -17,27 +19,27 @@
     "url": "https://github.com/bhoriuchi/soap-connect/issues"
   },
   "dependencies": {
-    "lodash": "^4.16.4",
-    "request": "^2.75.0",
-    "xmldom": "^0.1.22",
+    "lodash": "^4.17.4",
+    "node-localstorage": "^1.3.0",
+    "request": "^2.81.0",
     "xmlbuilder": "^8.2.2",
-    "node-localstorage": "^1.3.0"
+    "xmldom": "^0.1.27"
   },
   "devDependencies": {
+    "babel-core": "^6.24.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-es2015": "^6.24.0",
+    "babel-preset-es2015-rollup": "^3.0.0",
+    "babel-preset-stage-2": "^6.22.0",
+    "babel-register": "^6.24.0",
+    "babel-runtime": "^6.23.0",
     "bluebird": "^3.4.6",
-    "chalk": "^1.1.3",
     "chai": "^3.5.0",
-    "babel-core": "^6.0.0",
-    "babel-preset-es2015": "^6.14.0",
-    "babel-preset-stage-2": "^6.0.0",
-    "babel-plugin-transform-runtime": "^6.0.0",
-    "babel-runtime": "^6.9.0",
-    "babel-register": "^6.11.0",
+    "chalk": "^1.1.3",
     "mocha": "^3.0.0",
     "rewire": "^2.5.1",
-    "rollup": "^0.34.0",
-    "rollup-plugin-babel": "^2.6.0",
-    "babel-preset-es2015-rollup": "^1.2.0"
+    "rollup": "^0.41.6",
+    "rollup-plugin-babel": "^2.7.1"
   },
   "scripts": {
     "test": "echo \\\"Error: no test specified\\\" && exit 1",

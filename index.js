@@ -1,15 +1,14 @@
 'use strict';
 
-Object.defineProperty(exports, '__esModule', { value: true });
-
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var _ = _interopDefault(require('lodash'));
 var url = _interopDefault(require('url'));
 var EventEmitter = _interopDefault(require('events'));
+var fs = _interopDefault(require('fs'));
+var path = _interopDefault(require('path'));
 var xmldom = _interopDefault(require('xmldom'));
 var request = _interopDefault(require('request'));
-var path = _interopDefault(require('path'));
 var LocalStorage = _interopDefault(require('node-localstorage'));
 var xmlbuilder = _interopDefault(require('xmlbuilder'));
 
@@ -36,8 +35,11 @@ var WSDL_NS = 'http://schemas.xmlsoap.org/wsdl/';
 
 var XS_PREFIX = 'xsd';
 var XSI_PREFIX = 'xsi';
+
 var SOAPENV_PREFIX = 'soapenv';
 var SOAPENC_PREFIX = 'soapenc';
+
+
 var NODE_TYPES = {
   ELEMENT_NODE: 1,
   ATTRIBUTE_NODE: 2,
@@ -53,29 +55,55 @@ var NODE_TYPES = {
   NOTATION_NODE: 12
 };
 
+var HTTP_RX = /^https?:\/\/.+/i;
+var ERROR_STAUTS = { statusCode: 500 };
+var OK_STATUS = { statusCode: 200 };
+
 function loadDoc(uri, cache) {
   var _this = this;
 
+  var encoding = _.get(this, 'options.encoding') || 'utf8';
+
   if (!_.has(cache, uri)) {
-    (function () {
-      cache[uri] = {};
-      var baseURI = uri.substring(0, uri.lastIndexOf('/')) + '/';
-      _this.emit('wsdl.load.start', uri);
+    cache[uri] = {};
+    var baseURI = uri.substring(0, uri.lastIndexOf('/')) + '/';
+    var isHTTP = baseURI.match(HTTP_RX);
+    this.emit('wsdl.load.start', uri);
 
-      request(uri, function (err, res, body) {
-        if (err || res.statusCode !== 200) return _this.emit('wsdl.load.error', err || body || res);
-        var doc = cache[uri] = new xmldom.DOMParser().parseFromString(body);
-        var wsdlImports = doc.getElementsByTagNameNS(WSDL_NS, 'import');
-        var xsImports = doc.getElementsByTagNameNS(XS_NS, 'import');
-        var xsIncludes = doc.getElementsByTagNameNS(XS_NS, 'include');
-        _.forEach(_.union(wsdlImports, xsImports, xsIncludes), function (link) {
-          var loc = link.getAttribute('location') || link.getAttribute('schemaLocation');
-          _this.loadDoc(url.parse(loc).host ? loc : url.resolve(baseURI, loc), cache);
-        });
-
-        _this.emit('wsdl.load.end', uri);
+    var load = function load(err, res, body) {
+      if (err || res.statusCode !== 200) return _this.emit('wsdl.load.error', err || body || res);
+      var address = '';
+      var doc = cache[uri] = new xmldom.DOMParser().parseFromString(body);
+      var wsdlImports = doc.getElementsByTagNameNS(WSDL_NS, 'import');
+      var xsImports = doc.getElementsByTagNameNS(XS_NS, 'import');
+      var xsIncludes = doc.getElementsByTagNameNS(XS_NS, 'include');
+      _.forEach(_.union(wsdlImports, xsImports, xsIncludes), function (link) {
+        var loc = link.getAttribute('location') || link.getAttribute('schemaLocation');
+        if (isHTTP) {
+          address = url.parse(loc).host ? loc : url.resolve(baseURI, loc);
+        } else {
+          address = path.resolve(baseURI, loc);
+        }
+        _this.loadDoc(address, cache);
       });
-    })();
+      _this.emit('wsdl.load.end', uri);
+    };
+
+    if (isHTTP) {
+      return request(uri, function (err, res, body) {
+        return load(err, res, body);
+      });
+    }
+
+    // is a file
+    try {
+      return fs.readFile(uri, encoding, function (err, body) {
+        if (err) return load(err, ERROR_STAUTS, body);
+        return load(null, OK_STATUS, body);
+      });
+    } catch (err) {
+      return load(err, ERROR_STAUTS, '');
+    }
   }
 }
 
@@ -154,119 +182,6 @@ function getBuiltinNSMeta() {
   });
 }
 
-var asyncGenerator = function () {
-  function AwaitValue(value) {
-    this.value = value;
-  }
-
-  function AsyncGenerator(gen) {
-    var front, back;
-
-    function send(key, arg) {
-      return new Promise(function (resolve, reject) {
-        var request = {
-          key: key,
-          arg: arg,
-          resolve: resolve,
-          reject: reject,
-          next: null
-        };
-
-        if (back) {
-          back = back.next = request;
-        } else {
-          front = back = request;
-          resume(key, arg);
-        }
-      });
-    }
-
-    function resume(key, arg) {
-      try {
-        var result = gen[key](arg);
-        var value = result.value;
-
-        if (value instanceof AwaitValue) {
-          Promise.resolve(value.value).then(function (arg) {
-            resume("next", arg);
-          }, function (arg) {
-            resume("throw", arg);
-          });
-        } else {
-          settle(result.done ? "return" : "normal", result.value);
-        }
-      } catch (err) {
-        settle("throw", err);
-      }
-    }
-
-    function settle(type, value) {
-      switch (type) {
-        case "return":
-          front.resolve({
-            value: value,
-            done: true
-          });
-          break;
-
-        case "throw":
-          front.reject(value);
-          break;
-
-        default:
-          front.resolve({
-            value: value,
-            done: false
-          });
-          break;
-      }
-
-      front = front.next;
-
-      if (front) {
-        resume(front.key, front.arg);
-      } else {
-        back = null;
-      }
-    }
-
-    this._invoke = send;
-
-    if (typeof gen.return !== "function") {
-      this.return = undefined;
-    }
-  }
-
-  if (typeof Symbol === "function" && Symbol.asyncIterator) {
-    AsyncGenerator.prototype[Symbol.asyncIterator] = function () {
-      return this;
-    };
-  }
-
-  AsyncGenerator.prototype.next = function (arg) {
-    return this._invoke("next", arg);
-  };
-
-  AsyncGenerator.prototype.throw = function (arg) {
-    return this._invoke("throw", arg);
-  };
-
-  AsyncGenerator.prototype.return = function (arg) {
-    return this._invoke("return", arg);
-  };
-
-  return {
-    wrap: function (fn) {
-      return function () {
-        return new AsyncGenerator(fn.apply(this, arguments));
-      };
-    },
-    await: function (value) {
-      return new AwaitValue(value);
-    }
-  };
-}();
-
 var classCallCheck = function (instance, Constructor) {
   if (!(instance instanceof Constructor)) {
     throw new TypeError("Cannot call a class as a function");
@@ -291,6 +206,10 @@ var createClass = function () {
   };
 }();
 
+
+
+
+
 var defineProperty = function (obj, key, value) {
   if (key in obj) {
     Object.defineProperty(obj, key, {
@@ -305,6 +224,8 @@ var defineProperty = function (obj, key, value) {
 
   return obj;
 };
+
+
 
 var inherits = function (subClass, superClass) {
   if (typeof superClass !== "function" && superClass !== null) {
@@ -322,6 +243,16 @@ var inherits = function (subClass, superClass) {
   if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 };
 
+
+
+
+
+
+
+
+
+
+
 var possibleConstructorReturn = function (self, call) {
   if (!self) {
     throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -329,6 +260,10 @@ var possibleConstructorReturn = function (self, call) {
 
   return call && (typeof call === "object" || typeof call === "function") ? call : self;
 };
+
+
+
+
 
 var slicedToArray = function () {
   function sliceIterator(arr, i) {
@@ -686,12 +621,10 @@ function processDoc(doc, data) {
           nsData.binding = node;
           _.forEach(node.childNodes, function (node) {
             if (node.localName === 'operation') {
-              (function () {
-                var op = node.getAttribute('name');
-                _.forEach(node.childNodes, function (node) {
-                  if (node.localName === 'operation') nsData.actions[op] = node;
-                });
-              })();
+              var op = node.getAttribute('name');
+              _.forEach(node.childNodes, function (node) {
+                if (node.localName === 'operation') nsData.actions[op] = node;
+              });
             }
           });
           break;
@@ -740,31 +673,29 @@ function processDoc(doc, data) {
     nsData.attributeGroups = nsData.attributeGroups || {};
 
     _.forEach(node.childNodes, function (node) {
-      (function () {
-        switch (node.localName) {
-          case 'attribute':
-            nsData.attributes[node.getAttribute('name')] = node;
-            break;
-          case 'complexType':
-          case 'simpleType':
-            nsData.types[node.getAttribute('name')] = node;
-            break;
-          case 'element':
-            var name = node.getAttribute('name');
-            var el = nsData.elements[name] = node;
-            _.forEach(node.childNodes, function (node) {
-              if (_.includes(['complexType', 'simpleType'], node.localName)) {
-                node.setAttribute('name', name);
-                el.setAttribute('type', node.lookupPrefix(ns) + ':' + name);
-                nsData.types[name] = node;
-              }
-            });
-            break;
-          case 'attributeGroup':
-            nsData.attributeGroups[node.getAttribute('name')] = node;
-            break;
-        }
-      })();
+      switch (node.localName) {
+        case 'attribute':
+          nsData.attributes[node.getAttribute('name')] = node;
+          break;
+        case 'complexType':
+        case 'simpleType':
+          nsData.types[node.getAttribute('name')] = node;
+          break;
+        case 'element':
+          var name = node.getAttribute('name');
+          var el = nsData.elements[name] = node;
+          _.forEach(node.childNodes, function (node) {
+            if (_.includes(['complexType', 'simpleType'], node.localName)) {
+              node.setAttribute('name', name);
+              el.setAttribute('type', node.lookupPrefix(ns) + ':' + name);
+              nsData.types[name] = node;
+            }
+          });
+          break;
+        case 'attributeGroup':
+          nsData.attributeGroups[node.getAttribute('name')] = node;
+          break;
+      }
     });
   });
 }
@@ -908,8 +839,8 @@ var WSDL = function (_EventEmitter) {
   }, {
     key: 'getTypeAttribute',
     value: function getTypeAttribute(node) {
-      for (var key in node.attributes) {
-        var n = node.attributes[key];
+      for (var key$$1 in node.attributes) {
+        var n = node.attributes[key$$1];
         if (n.localName === 'type') {
           return n;
         }
@@ -1004,12 +935,12 @@ var WSDL = function (_EventEmitter) {
   return WSDL;
 }(EventEmitter);
 
-function WSDL$1 (address) {
+var WSDL$1 = function (address) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var cacheKey = arguments[2];
 
   return new WSDL(address, options, cacheKey);
-}
+};
 
 // Strategy taken from node-soap/strong-soap
 
@@ -1060,9 +991,9 @@ var BasicSecurity = function (_Security) {
   return BasicSecurity;
 }(Security$1);
 
-function BasicSecurity$1 (username, password, options) {
+var BasicSecurity$1 = function (username, password, options) {
   return new BasicSecurity(username, password, options);
-}
+};
 
 var BearerSecurity = function (_Security) {
   inherits(BearerSecurity, _Security);
@@ -1085,9 +1016,9 @@ var BearerSecurity = function (_Security) {
   return BearerSecurity;
 }(Security$1);
 
-function BearerSecurity$1 (token, options) {
+var BearerSecurity$1 = function (token, options) {
   return new BearerSecurity(token, options);
-}
+};
 
 var CookieSecurity = function (_Security) {
   inherits(CookieSecurity, _Security);
@@ -1115,9 +1046,9 @@ var CookieSecurity = function (_Security) {
   return CookieSecurity;
 }(Security$1);
 
-function CookieSecurity$1 (cookie, options) {
+var CookieSecurity$1 = function (cookie, options) {
   return new CookieSecurity(cookie, options);
-}
+};
 
 var Security = {
   Security: Security$1,
@@ -1490,12 +1421,12 @@ var SoapConnectClient = function (_EventEmitter) {
     if (options.ignoreSSL) process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
     return _ret = new Promise(function (resolve, reject) {
-      return cacheKey(_this.options.cacheKey, wsdlAddress, function (err, cacheKey) {
+      return cacheKey(_this.options.cacheKey, wsdlAddress, function (err, cacheKey$$1) {
         if (err) {
           callback(err);
           return reject(err);
         }
-        return WSDL$1(wsdlAddress, options, cacheKey).then(function (wsdlInstance) {
+        return WSDL$1(wsdlAddress, options, cacheKey$$1).then(function (wsdlInstance) {
           _this.wsdl = wsdlInstance;
           _this.types = createTypes(wsdlInstance);
           _this.services = createServices.call(_this, wsdlInstance);
@@ -1519,19 +1450,18 @@ var SoapConnectClient = function (_EventEmitter) {
   return SoapConnectClient;
 }(EventEmitter);
 
-function createClient (mainWSDL) {
+var createClient = function (mainWSDL) {
   var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
   var callback = arguments[2];
 
   return new SoapConnectClient(mainWSDL, options, callback);
-}
+};
 
 var index = {
   createClient: createClient,
+  Cache: Store,
   Security: Security,
-  Cache: Store
+  SoapConnectClient: SoapConnectClient
 };
 
-exports.SoapConnectClient = SoapConnectClient;
-exports.Security = Security;
-exports['default'] = index;
+module.exports = index;
