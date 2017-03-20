@@ -30,7 +30,7 @@ export class SoapConnectClient extends EventEmitter {
         if (error) return reject(error)
 
         return WSDL(wsdlAddress, options, cacheKey)
-          .then((wsdlInstance) => {
+          .then(wsdlInstance => {
             this.wsdl = wsdlInstance
             this.types = createTypes(wsdlInstance)
             this.services = createServices.call(this, wsdlInstance)
@@ -46,6 +46,6 @@ export class SoapConnectClient extends EventEmitter {
   }
 }
 
-export default function (mainWSDL, options = {}, callback) {
-  return new SoapConnectClient(mainWSDL, options, callback)
+export default function (mainWSDL, options) {
+  return new SoapConnectClient(mainWSDL, options)
 }

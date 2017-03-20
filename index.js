@@ -1430,11 +1430,8 @@ var SoapConnectClient = function (_EventEmitter) {
   return SoapConnectClient;
 }(EventEmitter);
 
-var createClient = function (mainWSDL) {
-  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-  var callback = arguments[2];
-
-  return new SoapConnectClient(mainWSDL, options, callback);
+var createClient = function (mainWSDL, options) {
+  return new SoapConnectClient(mainWSDL, options);
 };
 
 var index = {
