@@ -17,9 +17,12 @@ function getExtProps (wsdl, type, ext = {}) {
 }
 
 function typeMatch (wsdl, type, data) {
-  // check for an explicitly defined type and return it if found
-  let explicitType = _.get(data, `${XSI_PREFIX}:type`)
-  if (explicitType) return explicitType
+  // check for an explicitly defined type and return it if found and remove it from the object
+  let explicitType = _.get(data, `@${XSI_PREFIX}:type`)
+  if (explicitType) {
+    delete data[`@${XSI_PREFIX}:type`] // remove from the object
+    return explicitType
+  }
 
   // otherwise look for the best match
   let bestMatch = type
