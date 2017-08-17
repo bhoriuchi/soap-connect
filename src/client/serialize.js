@@ -17,6 +17,11 @@ function getExtProps (wsdl, type, ext = {}) {
 }
 
 function typeMatch (wsdl, type, data) {
+  // check for an explicitly defined type and return it if found
+  let explicitType = _.get(data, `${XSI_PREFIX}:type`)
+  if (explicitType) return explicitType
+
+  // otherwise look for the best match
   let bestMatch = type
   let info = wsdl.getType(type)
   let props = _.union(_.map(info.elements, 'name'), _.map(info.attributes, 'name'))
@@ -25,7 +30,7 @@ function typeMatch (wsdl, type, data) {
   if (inter === dataKeys.length) return bestMatch
   let ext = getExtProps(wsdl, info)
 
-  _.forEach(ext, (e, n) => {
+  _.forEach(ext, e => {
     let currentInter = _.intersection(e.props, dataKeys).length
     if (currentInter > inter) {
       inter = currentInter
@@ -45,7 +50,9 @@ export default function serialize (wsdl, typeCoord, data, context = {}) {
   nsUsed = nsUsed ? _.union(nsUsed, [prefix]) : [prefix]
 
   if (base) {
-    obj = !wsdl.isBuiltInType(base) ? serialize(wsdl, base, data, context).obj : { '#text': data.value }
+    obj = !wsdl.isBuiltInType(base)
+      ? serialize(wsdl, base, data, context).obj
+      : { '#text': data.value }
   }
 
   // set element values
@@ -73,10 +80,12 @@ export default function serialize (wsdl, typeCoord, data, context = {}) {
           let typePrefix = wsdl.getNSPrefix(t)
           let isSimple = wsdl.isSimpleType(t)
 
-          obj[`${prefix}:${el.name}`] = isSimple ? wsdl.convertValue(t, val) : serialize(wsdl, t, val, {
-            parentType: [typePrefix, typeName].join(':'),
-            nsUsed
-          }).obj
+          obj[`${prefix}:${el.name}`] = isSimple
+            ? wsdl.convertValue(t, val)
+            : serialize(wsdl, t, val, {
+              parentType: [typePrefix, typeName].join(':'),
+              nsUsed
+            }).obj
         }
       }
     }

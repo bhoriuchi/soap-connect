@@ -1123,6 +1123,11 @@ function getExtProps(wsdl, type) {
 }
 
 function typeMatch(wsdl, type, data) {
+  // check for an explicitly defined type and return it if found
+  var explicitType = _.get(data, XSI_PREFIX + ':type');
+  if (explicitType) return explicitType;
+
+  // otherwise look for the best match
   var bestMatch = type;
   var info = wsdl.getType(type);
   var props = _.union(_.map(info.elements, 'name'), _.map(info.attributes, 'name'));
@@ -1131,7 +1136,7 @@ function typeMatch(wsdl, type, data) {
   if (inter === dataKeys.length) return bestMatch;
   var ext = getExtProps(wsdl, info);
 
-  _.forEach(ext, function (e, n) {
+  _.forEach(ext, function (e) {
     var currentInter = _.intersection(e.props, dataKeys).length;
     if (currentInter > inter) {
       inter = currentInter;
