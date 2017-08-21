@@ -60,6 +60,13 @@ export class WSDL extends EventEmitter {
     return _.get(this.metadata, `types[${ns}][${type}]`)
   }
 
+  getTypeByLocalNSPrefix (nsPrefix, localName) {
+    let nsIdx = _.findIndex(this.metadata.namespaces, { prefix: nsPrefix })
+    let ns = _.get(this.metadata.namespaces, `[${nsIdx}]`)
+    let typeIdx = ns.types.indexOf(localName)
+    return [ nsIdx, typeIdx ]
+  }
+
   getTypeByLocalNS (nsURI, localName) {
     let nsIdx = _.findIndex(this.metadata.namespaces, { name: nsURI })
     let ns = _.get(this.metadata.namespaces, `[${nsIdx}]`)

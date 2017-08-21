@@ -830,6 +830,14 @@ var WSDL = function (_EventEmitter) {
       return _.get(this.metadata, 'types[' + ns + '][' + type + ']');
     }
   }, {
+    key: 'getTypeByLocalNSPrefix',
+    value: function getTypeByLocalNSPrefix(nsPrefix, localName) {
+      var nsIdx = _.findIndex(this.metadata.namespaces, { prefix: nsPrefix });
+      var ns = _.get(this.metadata.namespaces, '[' + nsIdx + ']');
+      var typeIdx = ns.types.indexOf(localName);
+      return [nsIdx, typeIdx];
+    }
+  }, {
     key: 'getTypeByLocalNS',
     value: function getTypeByLocalNS(nsURI, localName) {
       var nsIdx = _.findIndex(this.metadata.namespaces, { name: nsURI });
@@ -1127,7 +1135,7 @@ function typeMatch(wsdl, type, data) {
   var explicitType = _.get(data, '["@' + XSI_PREFIX + ':type"]');
   if (_.isString(explicitType) && explicitType.indexOf(':') !== -1) {
     delete data['@' + XSI_PREFIX + ':type']; // remove from the object
-    return wsdl.getType(explicitType.split(':'));
+    return wsdl.getTypeByLocalNSPrefix(explicitType.split(':'));
   }
 
   // otherwise look for the best match
