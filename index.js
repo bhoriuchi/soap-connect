@@ -1125,9 +1125,9 @@ function getExtProps(wsdl, type) {
 function typeMatch(wsdl, type, data) {
   // check for an explicitly defined type and return it if found and remove it from the object
   var explicitType = _.get(data, '["@' + XSI_PREFIX + ':type"]');
-  if (explicitType) {
+  if (_.isString(explicitType) && explicitType.indexOf(':') !== -1) {
     delete data['@' + XSI_PREFIX + ':type']; // remove from the object
-    return explicitType;
+    return wsdl.getType(explicitType.split(':'));
   }
 
   // otherwise look for the best match
