@@ -1135,7 +1135,13 @@ function typeMatch(wsdl, type, data) {
   var explicitType = _.get(data, '["@' + XSI_PREFIX + ':type"]');
   if (_.isString(explicitType) && explicitType.indexOf(':') !== -1) {
     delete data['@' + XSI_PREFIX + ':type']; // remove from the object
-    return wsdl.getTypeByLocalNSPrefix(explicitType.split(':'));
+
+    var _explicitType$split = explicitType.split(':'),
+        _explicitType$split2 = slicedToArray(_explicitType$split, 2),
+        nsPrefix = _explicitType$split2[0],
+        localName = _explicitType$split2[1];
+
+    return wsdl.getTypeByLocalNSPrefix(nsPrefix, localName);
   }
 
   // otherwise look for the best match

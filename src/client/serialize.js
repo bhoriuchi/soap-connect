@@ -21,7 +21,8 @@ function typeMatch (wsdl, type, data) {
   let explicitType = _.get(data, `["@${XSI_PREFIX}:type"]`)
   if (_.isString(explicitType) && explicitType.indexOf(':') !== -1) {
     delete data[`@${XSI_PREFIX}:type`] // remove from the object
-    return wsdl.getTypeByLocalNSPrefix(explicitType.split(':'))
+    let  [ nsPrefix, localName ] = explicitType.split(':')
+    return wsdl.getTypeByLocalNSPrefix(nsPrefix, localName)
   }
 
   // otherwise look for the best match
